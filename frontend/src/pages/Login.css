@@ -1,0 +1,210 @@
+.login-page {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 38px 24px;
+  isolation: isolate;
+  color: #15345b;
+  background: #122b48;
+}
+
+.login-background {
+  position: absolute;
+  z-index: -2;
+  inset: -16px;
+  background-image: linear-gradient(180deg, rgba(10, 37, 68, .76), rgba(12, 43, 76, .43) 49%, rgba(7, 29, 57, .86)), url("/igrejaInterno.jpeg");
+  background-position: center;
+  background-size: cover;
+  filter: blur(5px);
+  transform: scale(1.04);
+}
+
+.login-arc {
+  position: absolute;
+  z-index: -1;
+  width: 610px;
+  height: 610px;
+  border: 1.5px solid rgba(232, 189, 124, .85);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.login-arc-top { top: -370px; left: -365px; }
+.login-arc-bottom { right: -330px; bottom: -405px; }
+.login-arc-bottom::after {
+  position: absolute;
+  inset: 60px;
+  border: 1.5px solid rgba(35, 117, 197, .9);
+  border-radius: 50%;
+  content: "";
+}
+
+.login-card {
+  width: min(100%, 560px);
+  padding: 32px 38px 24px;
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 23px;
+  background: linear-gradient(180deg, rgba(244, 247, 251, .79), rgba(251, 246, 243, .69) 53%, rgba(68, 93, 121, .61));
+  box-shadow: 0 28px 75px rgba(10, 27, 47, .24), inset 0 1px rgba(255, 255, 255, .4);
+  -webkit-backdrop-filter: blur(23px);
+  backdrop-filter: blur(23px);
+}
+
+.login-header { text-align: center; }
+.login-logo {
+  display: block;
+  width: min(100%, 390px);
+  height: auto;
+  margin: 0 auto 8px;
+}
+.login-header h1 {
+  margin: 0;
+  color: #11325a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(32px, 4vw, 39px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.login-header p {
+  margin: 6px 0 22px;
+  color: #46647f;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.login-form { display: grid; gap: 15px; }
+.login-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #17395f;
+  font-size: 16px;
+  font-weight: 600;
+}
+.login-input-wrap {
+  display: flex;
+  height: 59px;
+  align-items: center;
+  gap: 19px;
+  padding: 0 18px;
+  border: 2px solid rgba(255, 255, 255, .92);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .45);
+  color: #183e69;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.login-input-wrap:focus-within {
+  border-color: #3481cc;
+  background: rgba(255, 255, 255, .7);
+  box-shadow: 0 0 0 3px rgba(52, 129, 204, .15);
+}
+.login-input-wrap > svg { flex: none; }
+.login-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #16365c;
+  font: inherit;
+  font-size: 17px;
+}
+.login-input-wrap input::placeholder { color: #677889; opacity: 1; }
+.login-input-wrap input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.login-input-wrap input[type="number"]::-webkit-inner-spin-button,
+.login-input-wrap input[type="number"]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+
+.login-password-toggle {
+  display: grid;
+  flex: none;
+  width: 34px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #69809a;
+  cursor: pointer;
+}
+.login-password-toggle:hover,
+.login-password-toggle:focus-visible { color: #183e69; }
+.login-error {
+  margin: 0;
+  padding: 10px 13px;
+  border: 1px solid #f1b8b8;
+  border-radius: 9px;
+  background: rgba(255, 241, 241, .88);
+  color: #a02727;
+  font-size: 14px;
+}
+.login-submit {
+  display: flex;
+  width: 100%;
+  min-height: 59px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+  border: 1px solid #1261aa;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #1266b2, #0a3f7c);
+  box-shadow: 0 10px 20px rgba(14, 62, 111, .16);
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+  transition: filter .18s, transform .18s;
+}
+.login-submit:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.login-submit:disabled { cursor: wait; opacity: .7; }
+.login-footer { margin-top: 18px; text-align: center; }
+.login-footer-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #dba84e;
+  font-size: 25px;
+  line-height: 1;
+}
+.login-footer-divider::before,
+.login-footer-divider::after {
+  width: 138px;
+  height: 1px;
+  background: rgba(225, 190, 136, .85);
+  content: "";
+}
+.login-footer p {
+  margin: 9px 0 0;
+  color: #f8f6f2;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-style: italic;
+  text-shadow: 0 1px 4px rgba(14, 40, 68, .55);
+}
+
+@media (max-width: 600px) {
+  .login-page { padding: 20px 12px; }
+  .login-background {
+    background-image: linear-gradient(180deg, rgba(10, 37, 68, .68), rgba(12, 43, 76, .2) 48%, rgba(7, 29, 57, .76)), url("/igrejaInterno.jpeg");
+    background-size: 100% 100%;
+    filter: blur(3px);
+  }
+  .login-card { width: min(82vw, 380px); padding: 24px 20px 22px; }
+  .login-logo { width: 100%; max-width: 320px; margin-bottom: 8px; }
+  .login-header h1 { font-size: clamp(28px, 7vw, 34px); }
+  .login-header p { margin: 5px 0 20px; font-size: 14px; }
+  .login-form { gap: 13px; }
+  .login-field label { margin-bottom: 5px; font-size: 14px; }
+  .login-input-wrap { height: 52px; gap: 11px; padding: 0 12px; border-radius: 11px; }
+  .login-input-wrap > svg { width: 21px; height: 21px; }
+  .login-input-wrap input { font-size: 15px; }
+  .login-submit { min-height: 54px; font-size: 18px; }
+  .login-footer { margin-top: 16px; }
+  .login-footer-divider::before,
+  .login-footer-divider::after { width: auto; max-width: 90px; flex: 1; }
+  .login-footer p { font-size: 14px; }
+}

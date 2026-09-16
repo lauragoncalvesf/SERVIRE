@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model LoginAttempt {
+  key       String   @id
+  attempts  Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+enum TipoUsuario {
+  ADMIN
+  MEMBRO
+}
+
+enum PapelMembroPastoral {
+  COORDENADOR
+  MEMBRO
+}
+
+enum TipoEvento {
+  MISSA
+  CELEBRACAO
+  ADORACAO
+  NOVENA
+  PROCISSAO
+  REUNIAO
+  OUTRO
+}
+
+enum StatusEscala {
+  RASCUNHO
+  ABERTA
+  PREENCHIDA
+  COMPLETA
+  ENCERRADA
+  CANCELADA
+}
+
+enum StatusItemEscala {
+  PENDENTE
+  CONFIRMADO
+  RECUSADO
+  REMOVIDO
+  SUBSTITUIDO
+}
+
+enum TipoNotificacao {
+  ESCALA_ABERTA
+  ESCALADO
+  SUBSTITUIDO
+  CONFIRMACAO_PENDENTE
+}
+
+model Paroquia {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  cidade       String?
+  estado       String?
+  telefone     String?
+  email        String?
+  ativa        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuarios  Usuario[]
+  pastorais Pastoral[]
+  eventos   Evento[]
+}
+
+model Usuario {
+  id           Int         @id @default(autoincrement())
+  nome         String
+  email        String
+  senha        String
+  telefone     String?
+  ativo        Boolean     @default(true)
+  tipo         TipoUsuario @default(MEMBRO)
+  criadoEm     DateTime    @default(now())
+  atualizadoEm DateTime    @updatedAt
+
+  paroquiaId Int
+  paroquia   Paroquia @relation(fields: [paroquiaId], references: [id], onDelete: Cascade)
+
+  pastorais          MembroPastoral[]
+  itensEscala        ItemEscala[]
+  indisponibilidades Indisponibilidade[]
+  notificacoes       Notificacao[]
+
+  @@unique([paroquiaId, email])
+}
+
+model Pastoral {
+  id                Int      @id @default(autoincrement())
+  nome              String
+  descricao         String?
+  ativa             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+  permiteAutoEscala Boolean  @default(false)
+  exigeConfirmacao  Boolean  @default(false)
+
+  paroquiaId Int
+  paroquia   Paroquia @relation(fields: [paroquiaId], references: [id], onDelete: Cascade)
+
+  membros MembroPastoral[]
+  funcoes FuncaoPastoral[]
+  escalas Escala[]
+
+  @@unique([paroquiaId, nome])
+}
+
+model MembroPastoral {
+  id         Int                 @id @default(autoincrement())
+  usuarioId  Int
+  pastoralId Int
+  papel      PapelMembroPastoral @default(MEMBRO)
+  ativo      Boolean             @default(true)
+  criadoEm   DateTime            @default(now())
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pastoral Pastoral @relation(fields: [pastoralId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, pastoralId])
+}
+
+model FuncaoPastoral {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  descricao    String?
+  ativa        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  itensEscala   ItemEscala[]
+  funcoesEscala FuncaoEscala[]
+
+  pastoralId Int
+  pastoral   Pastoral @relation(fields: [pastoralId], references: [id], onDelete: Cascade)
+
+  @@unique([pastoralId, nome])
+}
+
+model Evento {
+  id           Int        @id @default(autoincrement())
+  titulo       String
+  tipo         TipoEvento @default(MISSA)
+  dataHora     DateTime
+  local        String?
+  descricao    String?
+  ativo        Boolean    @default(true)
+  criadoEm     DateTime   @default(now())
+  atualizadoEm DateTime   @updatedAt
+
+  escalas            Escala[]
+  itensEscala        ItemEscala[]
+  indisponibilidades Indisponibilidade[]
+  notificacoes       Notificacao[]
+
+  paroquiaId Int
+  paroquia   Paroquia @relation(fields: [paroquiaId], references: [id], onDelete: Cascade)
+}
+
+model Escala {
+  id           Int          @id @default(autoincrement())
+  status       StatusEscala @default(RASCUNHO)
+  observacao   String?
+  criadoEm     DateTime     @default(now())
+  atualizadoEm DateTime     @updatedAt
+
+  eventoId   Int
+  pastoralId Int
+
+  evento   Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  pastoral Pastoral @relation(fields: [pastoralId], references: [id], onDelete: Cascade)
+
+  itens   ItemEscala[]
+  funcoes FuncaoEscala[]
+  notificacoes  Notificacao[]
+
+  @@unique([eventoId, pastoralId])
+}
+
+model ItemEscala {
+  id       Int              @id @default(autoincrement())
+  status   StatusItemEscala @default(PENDENTE)
+  criadoEm DateTime         @default(now())
+
+  escalaId         Int
+  eventoId         Int
+  usuarioId        Int
+  funcaoPastoralId Int
+  funcaoEscalaId   Int?
+
+  escala         Escala         @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+  evento         Evento         @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  funcaoPastoral FuncaoPastoral @relation(fields: [funcaoPastoralId], references: [id], onDelete: Cascade)
+  funcaoEscala   FuncaoEscala?  @relation(fields: [funcaoEscalaId], references: [id])
+
+  notificacoes   Notificacao[]
+
+}
+
+model FuncaoEscala {
+  id Int @id @default(autoincrement())
+
+  quantidadeVagas Int @default(1)
+
+  escalaId Int
+  escala   Escala @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+
+  funcaoPastoralId Int
+  funcaoPastoral   FuncaoPastoral @relation(fields: [funcaoPastoralId], references: [id])
+
+  itens ItemEscala[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([escalaId, funcaoPastoralId])
+}
+
+model Indisponibilidade {
+  id       Int      @id @default(autoincrement())
+  motivo   String?
+  criadoEm DateTime @default(now())
+
+  usuarioId Int
+  eventoId  Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  evento  Evento  @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, eventoId])
+}
+
+model Notificacao {
+  id Int @id @default(autoincrement())
+
+  tipo TipoNotificacao
+
+  titulo   String
+  mensagem String
+
+  lidaEm DateTime?
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  eventoId Int?
+  evento   Evento? @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  escalaId Int?
+  escala   Escala? @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+
+  itemEscalaId Int?
+  itemEscala   ItemEscala? @relation(fields: [itemEscalaId], references: [id], onDelete: Cascade)
+
+  criadoEm DateTime @default(now())
+
+  @@index([usuarioId, lidaEm])
+  @@index([eventoId])
+  @@index([escalaId])
+}
