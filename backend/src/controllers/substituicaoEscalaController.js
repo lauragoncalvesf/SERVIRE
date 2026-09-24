@@ -13,6 +13,8 @@ import {
   criarNotificacao
 } from "../services/notificacaoServices.js"
 
+import { executarTransacao } from "../services/transacao.js"
+
 
 export async function substituirMembroEscala(req, res) {
   try {
