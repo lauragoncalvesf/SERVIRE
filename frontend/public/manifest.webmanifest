@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Servire | Sistema de Gestão Pastoral",
+  "short_name": "Servire",
+  "description": "Sistema de Gestão Pastoral",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#122b48",
+  "theme_color": "#1D5C9E",
+  "icons": [
+    {
+      "src": "/logo2.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

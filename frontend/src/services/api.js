@@ -1,7 +1,12 @@
 import axios from "axios"
 
+const apiLocalUrl = new URL(window.location.origin)
+apiLocalUrl.port = "3333"
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL
+  baseURL: import.meta.env.DEV
+    ? apiLocalUrl.origin
+    : import.meta.env.VITE_API_URL || apiLocalUrl.origin
 })
 
 api.interceptors.request.use((config) => {

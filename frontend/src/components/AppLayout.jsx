@@ -15,7 +15,7 @@ import { useState } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
 
 import { useAuth } from "../contexts/auth"
-import { useTheme } from "../contexts/ThemeContext"
+import { useTheme } from "../contexts/useTheme"
 import logoClara from "../assets/logo3clara.png"
 
 import { formatarTipoUsuario } from "../utils"

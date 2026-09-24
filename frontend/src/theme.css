@@ -1,0 +1,125 @@
+.theme-toggle {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 1px solid #e4dfd3;
+  border-radius: 12px;
+  background: #f7f5ef;
+  color: #1d5c9e;
+  cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.theme-toggle:hover { background: #efe8d6; }
+.theme-toggle:focus-visible,
+.login-theme-toggle:focus-visible { outline: 3px solid #e6b85f; outline-offset: 2px; }
+
+@media (max-width: 600px) {
+  .app-shell :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    font-size: max(16px, 1em);
+  }
+}
+
+html[data-theme="escuro"] {
+  --page: #101b2a;
+  --surface: #1b2a3e;
+  --surface-soft: #22354b;
+  --surface-raised: #2a3e56;
+  --border: #3c5068;
+  --ink: #edf3fa;
+  --muted: #b7c6d8;
+  --accent: #9dccff;
+}
+html[data-theme="escuro"] body,
+html[data-theme="escuro"] .app-shell {
+  background: var(--page);
+  color: var(--ink);
+}
+html[data-theme="escuro"] .app-sidebar { background: #143f70; }
+html[data-theme="escuro"] .theme-toggle {
+  border-color: var(--border);
+  background: var(--surface-soft);
+  color: #f0cc80;
+}
+html[data-theme="escuro"] .theme-toggle:hover { background: var(--surface-raised); }
+
+html[data-theme="escuro"] .app-shell :is(
+  [class~="bg-white"],
+  [class~="bg-white/70"],
+  [class~="bg-[#F7F5EF]"]
+) { background-color: var(--surface); }
+html[data-theme="escuro"] .app-shell :is(
+  [class~="bg-slate-50"],
+  [class~="bg-slate-50/70"],
+  [class~="bg-slate-100"],
+  [class~="bg-[#EFE8D6]"],
+  [class~="bg-[#EEF5FC]"],
+  [class~="bg-[#F3F8FE]"],
+  [class~="bg-[#EAF3FC]"]
+) { background-color: var(--surface-soft); }
+html[data-theme="escuro"] .app-shell :is(
+  [class~="bg-slate-200"],
+  [class~="bg-slate-300"]
+) { background-color: var(--surface-raised); }
+
+html[data-theme="escuro"] .app-shell :is(
+  [class~="text-slate-900"],
+  [class~="text-slate-800"],
+  [class~="text-slate-700"]
+) { color: var(--ink); }
+html[data-theme="escuro"] .app-shell :is(
+  [class~="text-slate-600"],
+  [class~="text-slate-500"],
+  [class~="text-slate-400"]
+) { color: var(--muted); }
+html[data-theme="escuro"] .app-shell :is(
+  [class~="text-[#3B7EC7]"],
+  [class~="text-[#2F6BAA]"],
+  [class~="text-[#1D5C9E]"]
+) { color: var(--accent); }
+
+html[data-theme="escuro"] .app-shell :is(
+  [class~="border-slate-100"],
+  [class~="border-slate-200"],
+  [class~="border-slate-300"],
+  [class~="border-slate-500"],
+  [class~="border-[#EFE8D6]"],
+  [class~="border-[#D9E8F7]"]
+) { border-color: var(--border); }
+
+html[data-theme="escuro"] .app-shell :is([class~="bg-blue-50"], [class~="bg-blue-50/40"], [class~="bg-blue-100"]) { background-color: #183753; }
+html[data-theme="escuro"] .app-shell :is([class~="text-blue-700"], [class~="text-blue-800"]) { color: #a5d2ff; }
+html[data-theme="escuro"] .app-shell [class~="border-blue-200"] { border-color: #365d83; }
+html[data-theme="escuro"] .app-shell :is([class~="bg-red-50"], [class~="bg-red-100"], [class~="bg-red-100/70"]) { background-color: #3d2832; }
+html[data-theme="escuro"] .app-shell :is([class~="text-red-600"], [class~="text-red-700"], [class~="text-red-800"]) { color: #ffaaa9; }
+html[data-theme="escuro"] .app-shell :is([class~="border-red-100"], [class~="border-red-200"]) { border-color: #754552; }
+html[data-theme="escuro"] .app-shell :is([class~="bg-emerald-50"], [class~="bg-emerald-100"], [class~="bg-green-100"]) { background-color: #193c35; }
+html[data-theme="escuro"] .app-shell :is([class~="text-emerald-600"], [class~="text-emerald-700"], [class~="text-emerald-800"], [class~="text-green-700"]) { color: #8de2bb; }
+html[data-theme="escuro"] .app-shell :is([class~="border-emerald-100"], [class~="border-emerald-200"]) { border-color: #3b6a5d; }
+html[data-theme="escuro"] .app-shell :is([class~="bg-amber-50"], [class~="bg-amber-100"]) { background-color: #403522; }
+html[data-theme="escuro"] .app-shell :is([class~="text-amber-700"], [class~="text-amber-800"]) { color: #f4d08e; }
+html[data-theme="escuro"] .app-shell [class~="border-amber-200"] { border-color: #75603c; }
+html[data-theme="escuro"] .app-shell :is([class~="bg-violet-50"], [class~="bg-violet-100"], [class~="bg-purple-50"]) { background-color: #352d4e; }
+html[data-theme="escuro"] .app-shell :is([class~="text-violet-700"], [class~="text-violet-800"], [class~="text-purple-700"], [class~="text-purple-800"]) { color: #c9b6ff; }
+html[data-theme="escuro"] .app-shell :is([class~="border-violet-200"], [class~="border-purple-200"]) { border-color: #675685; }
+html[data-theme="escuro"] .app-shell [class~="bg-cyan-50"] { background-color: #173c46; }
+html[data-theme="escuro"] .app-shell :is([class~="text-cyan-700"], [class~="text-cyan-800"]) { color: #9addf0; }
+html[data-theme="escuro"] .app-shell [class~="border-cyan-200"] { border-color: #39717d; }
+
+html[data-theme="escuro"] .app-shell :is(input, select, textarea) {
+  border-color: var(--border);
+  background-color: var(--surface);
+  color: var(--ink);
+}
+html[data-theme="escuro"] .app-shell :is(input, textarea)::placeholder { color: #92a5bc; }
+html[data-theme="escuro"] .app-shell :is(input, select, textarea):disabled { background-color: var(--surface-soft); }
+html[data-theme="escuro"] .app-shell :is(input, select, textarea):focus-visible { outline-color: var(--accent); }
+
+html[data-theme="escuro"] .app-shell {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-soft);
+  --fc-list-event-hover-bg-color: var(--surface-raised);
+  --fc-today-bg-color: #233f5d;
+}

@@ -1,14 +1,17 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowRight, Church, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
+import { ArrowRight, Church, Eye, EyeOff, LockKeyhole, Mail, Moon, Sun } from "lucide-react"
 
 import { useAuth } from "../contexts/auth"
+import { useTheme } from "../contexts/useTheme"
+import logoEscura from "../assets/logo3clara.png"
 import { emailValido, textoPreenchido, numeroInteiroPositivo, normalizarEmail } from "../utils"
 import "./Login.css"
 
 export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const { tema, alternarTema } = useTheme()
 
   const [email, setEmail] = useState("")
   const [senha, setSenha] = useState("")
@@ -55,10 +58,20 @@ export default function Login() {
       <div className="login-background" aria-hidden="true" />
       <div className="login-arc login-arc-top" aria-hidden="true" />
       <div className="login-arc login-arc-bottom" aria-hidden="true" />
+      <button
+        className="login-theme-toggle"
+        type="button"
+        onClick={alternarTema}
+        aria-label={tema === "claro" ? "Ativar modo escuro" : "Ativar modo claro"}
+        title={tema === "claro" ? "Modo escuro" : "Modo claro"}
+      >
+        {tema === "claro" ? <Moon size={20} /> : <Sun size={20} />}
+      </button>
 
       <section className="login-card" aria-labelledby="login-title">
         <header className="login-header">
-          <img className="login-logo" src="/logo3.png" alt="Servire — Sistema de Gestão Pastoral" />
+          <img className="login-logo" src={tema === "claro" ? "/logo3.png" : logoEscura}
+            alt="Servire — Sistema de Gestão Pastoral" />
           <h1 id="login-title">Bem-vindo</h1>
           <p>Entre para acessar suas pastorais e escalas.</p>
         </header>

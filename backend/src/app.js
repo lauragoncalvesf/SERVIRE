@@ -23,11 +23,51 @@ if (Number.isInteger(proxyHops) && proxyHops > 0) {
 }
 
 const origensPermitidas = validarOrigens(process.env)
-app.use(cors({
-  origin(origem, callback) {
-    callback(null, !origem || origensPermitidas.includes(origem))
+
+function origemLocalPermitida(origem) {
+  try {
+    const url = new URL(origem)
+
+    if (url.port !== "5173") {
+      return false
+    }
+
+    const host = url.hostname
+
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    )
+  } catch {
+    return false
   }
-}))
+}
+
+app.use(
+  cors({
+    origin(origem, callback) {
+      if (!origem) {
+        return callback(null, true)
+      }
+
+      if (
+        process.env.NODE_ENV !== "production" &&
+        origemLocalPermitida(origem)
+      ) {
+        return callback(null, true)
+      }
+
+      return callback(
+        null,
+        origensPermitidas.includes(origem)
+      )
+    }
+  })
+)
+
 app.use(express.json())
 
 app.get("/", (req, res) => {

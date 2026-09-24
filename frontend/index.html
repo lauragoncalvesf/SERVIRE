@@ -3,9 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo2.png?v=3" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="apple-touch-icon" href="/logo2.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1D5C9E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Servire" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Servire | Sistema de Gestão Pastoral</title>
+    <script>
+      try {
+        const salvo = localStorage.getItem("servire-tema")
+        document.documentElement.dataset.theme = salvo === "claro" || salvo === "escuro"
+          ? salvo
+          : (matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro")
+      } catch {
+        document.documentElement.dataset.theme = "claro"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

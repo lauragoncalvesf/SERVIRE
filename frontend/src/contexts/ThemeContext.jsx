@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react"
-
-const ThemeContext = createContext(null)
+import { useLayoutEffect, useState } from "react"
+import { ThemeContext } from "./theme"
 const STORAGE_KEY = "servire-tema"
 
 function temaInicial() {
@@ -19,7 +18,7 @@ function temaInicial() {
 export function ThemeProvider({ children }) {
   const [tema, setTema] = useState(temaInicial)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.theme = tema
     document.documentElement.style.colorScheme = tema === "escuro" ? "dark" : "light"
     try {
@@ -38,10 +37,4 @@ export function ThemeProvider({ children }) {
       {children}
     </ThemeContext.Provider>
   )
-}
-
-export function useTheme() {
-  const contexto = useContext(ThemeContext)
-  if (!contexto) throw new Error("useTheme requer ThemeProvider")
-  return contexto
 }
