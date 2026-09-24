@@ -18,6 +18,8 @@ import {
   formatarData
 } from "../utils"
 
+const INTERVALO_ATUALIZACAO = 60000
+
 export default function NotificacoesMenu() {
 
   const [
@@ -53,13 +55,17 @@ export default function NotificacoesMenu() {
 
     const intervalo = setInterval(() => {
 
+      if (document.visibilityState !== "visible") {
+        return
+      }
+
       carregarQuantidadeNaoLidas()
 
       if (aberto) {
         carregarNotificacoes()
       }
 
-    }, 3000)
+    }, INTERVALO_ATUALIZACAO)
 
     return () => {
       clearInterval(intervalo)

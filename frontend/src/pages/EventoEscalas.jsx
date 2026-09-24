@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 
 import AppLayout from "../components/AppLayout"
+import ConfirmacaoModal from "../components/ConfirmacaoModal"
 import api from "../services/api"
 import { useAuth } from "../contexts/auth"
 import { formatarData, statusItemAtivo, escalaEditavel, numeroInteiroPositivo} from "../utils"
@@ -79,6 +80,12 @@ export default function EventoEscalas() {
 
   const [salvandoSubstituicao, setSalvandoSubstituicao] = useState(false)
   const [erroSubstituicao, setErroSubstituicao] = useState("")
+  const [escalaParaExcluir, setEscalaParaExcluir] = useState(null)
+  const [excluindoEscala, setExcluindoEscala] = useState(false)
+  const [funcaoParaRemover, setFuncaoParaRemover] = useState(null)
+  const [removendoFuncao, setRemovendoFuncao] = useState(false)
+  const [membroParaRemover, setMembroParaRemover] = useState(null)
+  const [removendoMembro, setRemovendoMembro] = useState(false)
 
   const pastoraisGerenciaveis =
     pastorais.filter(
@@ -88,6 +95,20 @@ export default function EventoEscalas() {
 
   const podeCriarEscala =
     pastoraisGerenciaveis.length > 0
+
+  function descreverImpedimento(dados, mensagemPadrao) {
+    const mensagem = dados?.mensagem || mensagemPadrao
+
+    if (dados?.conflito) {
+      return `${mensagem}.\nJá participa da pastoral “${dados.conflito.pastoral}”, na função “${dados.conflito.funcao}”.`
+    }
+
+    if (dados?.motivo) {
+      return `${mensagem}.\nMotivo informado: ${dados.motivo}`
+    }
+
+    return mensagem
+  }
 
 
 
@@ -333,11 +354,11 @@ export default function EventoEscalas() {
         await carregarDados()
 
     } catch (error) {
-      console.log("ERRO AO ADICIONAR:", error.response?.data)
-
       setErroItem(
-        error.response?.data?.mensagem ||
-        "Erro ao adicionar membro à escala"
+        descreverImpedimento(
+          error.response?.data,
+          "Erro ao adicionar membro à escala"
+        )
       )
       } finally {
         setSalvandoItem(false)
@@ -489,21 +510,15 @@ export default function EventoEscalas() {
   }
 
   async function removerFuncaoEscala(funcaoEscala) {
-    const confirmar = window.confirm(
-      `Deseja remover a função "${funcaoEscala.funcaoPastoral.nome}" desta escala?`
-    )
-
-    if (!confirmar) {
-      return
-    }
-
     try {
+      setRemovendoFuncao(true)
       setErro("")
 
       await api.delete(
         `/funcoes-escala/${funcaoEscala.id}`
       )
 
+      setFuncaoParaRemover(null)
       await carregarDados()
 
     } catch (error) {
@@ -511,6 +526,8 @@ export default function EventoEscalas() {
         error.response?.data?.mensagem ||
         "Erro ao remover função da escala"
       )
+    } finally {
+      setRemovendoFuncao(false)
     }
   }
 
@@ -565,8 +582,10 @@ async function substituirMembro(event) {
 
   } catch (error) {
     setErroSubstituicao(
-      error.response?.data?.mensagem ||
-      "Erro ao substituir membro"
+      descreverImpedimento(
+        error.response?.data,
+        "Erro ao substituir membro"
+      )
     )
   } finally {
     setSalvandoSubstituicao(false)
@@ -574,21 +593,15 @@ async function substituirMembro(event) {
 }
 
 async function removerMembroEscala(item) {
-  const confirmar = window.confirm(
-    `Deseja remover ${item.usuario.nome} desta escala?`
-  )
-
-  if (!confirmar) {
-    return
-  }
-
   try {
+    setRemovendoMembro(true)
     setErro("")
 
     await api.delete(
       `/escalas/itens/${item.id}`
     )
 
+    setMembroParaRemover(null)
     await carregarDados()
 
   } catch (error) {
@@ -596,6 +609,24 @@ async function removerMembroEscala(item) {
       error.response?.data?.mensagem ||
       "Erro ao remover membro da escala"
     )
+  } finally {
+    setRemovendoMembro(false)
+  }
+}
+
+async function excluirEscala() {
+  if (!escalaParaExcluir) return
+
+  try {
+    setExcluindoEscala(true)
+    setErro("")
+    await api.delete(`/escalas/${escalaParaExcluir.id}`)
+    setEscalaParaExcluir(null)
+    await carregarDados()
+  } catch (error) {
+    setErro(error.response?.data?.mensagem || "Erro ao excluir escala")
+  } finally {
+    setExcluindoEscala(false)
   }
 }
 
@@ -938,6 +969,15 @@ const jaEstouEscaladoNoEvento = escalas.some(
                                 Disponibilizar
                               </button>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={() => setEscalaParaExcluir(escala)}
+                              className="inline-flex items-center justify-center gap-2 border border-red-200 bg-red-50 text-red-700 px-3 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-100"
+                            >
+                              <Trash2 size={16} />
+                              Excluir escala
+                            </button>
                           </div>
                         </details>
                       )}
@@ -1020,7 +1060,7 @@ const jaEstouEscaladoNoEvento = escalas.some(
                                         <button
                                           type="button"
                                           onClick={() =>
-                                            removerFuncaoEscala(funcaoEscala)
+                                            setFuncaoParaRemover(funcaoEscala)
                                           }
                                           className="inline-flex items-center justify-center gap-1.5 border border-red-100 bg-white text-red-600 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-red-50"
                                         >
@@ -1098,7 +1138,7 @@ const jaEstouEscaladoNoEvento = escalas.some(
                                               <button
                                                 type="button"
                                                 onClick={() =>
-                                                  removerMembroEscala(item)
+                                                  setMembroParaRemover(item)
                                                 }
                                                 className="border border-red-100 bg-white text-red-600 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-red-50"
                                               >
@@ -1423,9 +1463,10 @@ const jaEstouEscaladoNoEvento = escalas.some(
 
                 <select
                     value={membroSelecionado}
-                    onChange={(event) =>
-                    setMembroSelecionado(event.target.value)
-                    }
+                    onChange={(event) => {
+                      setMembroSelecionado(event.target.value)
+                      setErroItem("")
+                    }}
                     required
                     className="w-full border border-slate-300 rounded-lg px-4 py-3"
                 >
@@ -1446,7 +1487,7 @@ const jaEstouEscaladoNoEvento = escalas.some(
                 </div>
 
                 {erroItem && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+                <div className="whitespace-pre-line bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm leading-relaxed">
                     {erroItem}
                 </div>
                 )}
@@ -1731,9 +1772,10 @@ const jaEstouEscaladoNoEvento = escalas.some(
 
                   <select
                     value={novoMembroId}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setNovoMembroId(event.target.value)
-                    }
+                      setErroSubstituicao("")
+                    }}
                     required
                     className="w-full border border-slate-300 rounded-lg px-4 py-3"
                   >
@@ -1754,7 +1796,7 @@ const jaEstouEscaladoNoEvento = escalas.some(
                 </div>
 
                 {erroSubstituicao && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+                  <div className="whitespace-pre-line bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm leading-relaxed">
                     {erroSubstituicao}
                   </div>
                 )}
@@ -1792,6 +1834,42 @@ const jaEstouEscaladoNoEvento = escalas.some(
 
           </div>
         )}
+
+        <ConfirmacaoModal
+          aberto={Boolean(escalaParaExcluir)}
+          titulo="Excluir escala"
+          mensagem={escalaParaExcluir
+            ? `A escala da pastoral “${escalaParaExcluir.pastoral.nome}” será apagada deste evento, incluindo funções e participantes vinculados.`
+            : ""}
+          textoConfirmar="Excluir escala"
+          carregando={excluindoEscala}
+          onConfirmar={excluirEscala}
+          onFechar={() => setEscalaParaExcluir(null)}
+        />
+
+        <ConfirmacaoModal
+          aberto={Boolean(funcaoParaRemover)}
+          titulo="Remover função"
+          mensagem={funcaoParaRemover
+            ? `A função “${funcaoParaRemover.funcaoPastoral.nome}” será removida desta escala.`
+            : ""}
+          textoConfirmar="Remover função"
+          carregando={removendoFuncao}
+          onConfirmar={() => removerFuncaoEscala(funcaoParaRemover)}
+          onFechar={() => setFuncaoParaRemover(null)}
+        />
+
+        <ConfirmacaoModal
+          aberto={Boolean(membroParaRemover)}
+          titulo="Remover membro"
+          mensagem={membroParaRemover
+            ? `${membroParaRemover.usuario.nome} será removido desta escala.`
+            : ""}
+          textoConfirmar="Remover membro"
+          carregando={removendoMembro}
+          onConfirmar={() => removerMembroEscala(membroParaRemover)}
+          onFechar={() => setMembroParaRemover(null)}
+        />
 
 
     </AppLayout>

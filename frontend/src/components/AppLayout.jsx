@@ -90,7 +90,6 @@ export default function AppLayout({
       <aside
         className={`
           fixed top-0 left-0 z-50
-          h-screen
           w-64
           app-sidebar
           bg-[#1D5C9E]
@@ -108,7 +107,7 @@ export default function AppLayout({
         `}
       >
 
-        <div className="h-full flex flex-col">
+        <div className="app-sidebar-inner h-full flex flex-col">
 
           <div
             className="
@@ -152,7 +151,10 @@ export default function AppLayout({
 
           <nav
             className="
+              app-sidebar-nav
               flex-1
+              min-h-0
+              overflow-y-auto
               px-3
               py-5
               space-y-1.5
@@ -211,6 +213,8 @@ export default function AppLayout({
 
           <div
             className="
+              app-sidebar-footer
+              shrink-0
               p-4
               border-t
               border-white/15

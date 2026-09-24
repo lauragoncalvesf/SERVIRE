@@ -15,6 +15,29 @@
 .theme-toggle:focus-visible,
 .login-theme-toggle:focus-visible { outline: 3px solid #e6b85f; outline-offset: 2px; }
 
+.app-sidebar {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-sidebar-inner { min-height: 0; }
+
+.app-sidebar-nav {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.app-sidebar-footer {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+html:has(.app-shell [class~="fixed"][class~="inset-0"][class~="z-50"]),
+body:has(.app-shell [class~="fixed"][class~="inset-0"][class~="z-50"]) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 @media (max-width: 600px) {
   .app-shell :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
     font-size: max(16px, 1em);

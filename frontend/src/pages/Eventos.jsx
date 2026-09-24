@@ -5,6 +5,7 @@ import { formatarTipoEvento } from "../utils"
 
 
 import AppLayout from "../components/AppLayout"
+import ConfirmacaoModal from "../components/ConfirmacaoModal"
 import api from "../services/api"
 
 import FullCalendar from "@fullcalendar/react"
@@ -17,8 +18,10 @@ import {
   Clock3,
   List,
   MapPin,
+  Pencil,
   Plus,
-  Rows3
+  Rows3,
+  XCircle
 } from "lucide-react"
 import ptBrLocale from "@fullcalendar/core/locales/pt-br.js"
 import listPlugin from "@fullcalendar/list"
@@ -36,6 +39,11 @@ export default function Eventos() {
   const [erro, setErro] = useState("")
 
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
+  const [eventoEmEdicao, setEventoEmEdicao] = useState(null)
+  const [eventoParaCancelar, setEventoParaCancelar] = useState(null)
+  const [cancelandoEvento, setCancelandoEvento] = useState(false)
+  const [eventoParaDisponibilizar, setEventoParaDisponibilizar] = useState(null)
+  const [removendoIndisponibilidade, setRemovendoIndisponibilidade] = useState(false)
 
   const [titulo, setTitulo] = useState("")
   const [tipo, setTipo] = useState("MISSA")
@@ -163,37 +171,90 @@ export default function Eventos() {
     }
   }
 
-  async function criarEvento(event) {
+  function limparFormularioEvento() {
+    setTitulo("")
+    setTipo("MISSA")
+    setDataHora("")
+    setLocal("")
+    setDescricao("")
+    setEventoEmEdicao(null)
+    setErroFormulario("")
+  }
+
+  function fecharFormularioEvento() {
+    setMostrarFormulario(false)
+    limparFormularioEvento()
+  }
+
+  function formatarDataHoraLocal(valor) {
+    const data = new Date(valor)
+    const deslocamento = data.getTimezoneOffset() * 60000
+    return new Date(data.getTime() - deslocamento).toISOString().slice(0, 16)
+  }
+
+  function abrirEdicaoEvento(evento) {
+    setTitulo(evento.titulo)
+    setTipo(evento.tipo)
+    setDataHora(formatarDataHoraLocal(evento.dataHora))
+    setLocal(evento.local || "")
+    setDescricao(evento.descricao || "")
+    setEventoEmEdicao(evento)
+    setErroFormulario("")
+    setMostrarDetalhesEvento(false)
+    setEventoSelecionado(null)
+    setMostrarFormulario(true)
+  }
+
+  async function salvarEvento(event) {
     event.preventDefault()
 
     try {
       setSalvando(true)
       setErroFormulario("")
 
-      await api.post("/eventos", {
+      const dados = {
         titulo,
         tipo,
         dataHora,
         local,
         descricao
-      })
+      }
 
-      setTitulo("")
-      setTipo("MISSA")
-      setDataHora("")
-      setLocal("")
-      setDescricao("")
-      setMostrarFormulario(false)
+      if (eventoEmEdicao) {
+        await api.put(`/eventos/${eventoEmEdicao.id}`, dados)
+      } else {
+        await api.post("/eventos", dados)
+      }
+
+      fecharFormularioEvento()
 
       await carregarEventos()
 
     } catch (error) {
       setErroFormulario(
         error.response?.data?.mensagem ||
-        "Erro ao criar evento"
+        eventoEmEdicao
+          ? "Erro ao atualizar evento"
+          : "Erro ao criar evento"
       )
     } finally {
       setSalvando(false)
+    }
+  }
+
+  async function cancelarEvento(evento) {
+    try {
+      setCancelandoEvento(true)
+      setErro("")
+      await api.delete(`/eventos/${evento.id}`)
+      setEventoParaCancelar(null)
+      setMostrarDetalhesEvento(false)
+      setEventoSelecionado(null)
+      await carregarEventos()
+    } catch (error) {
+      setErro(error.response?.data?.mensagem || "Erro ao cancelar evento")
+    } finally {
+      setCancelandoEvento(false)
     }
   }
 
@@ -247,21 +308,17 @@ export default function Eventos() {
   }
 
   async function removerIndisponibilidade(eventoId) {
-    const confirmar = window.confirm(
-      "Deseja informar que você está disponível novamente para este evento?"
-    )
-
-    if (!confirmar) {
-      return
-    }
-
     try {
+      setRemovendoIndisponibilidade(true)
       setErro("")
 
       await api.delete(
         `/indisponibilidades/eventos/${eventoId}`
       )
 
+      setEventoParaDisponibilizar(null)
+      setMostrarDetalhesEvento(false)
+      setEventoSelecionado(null)
       await carregarEventos()
 
     } catch (error) {
@@ -269,6 +326,8 @@ export default function Eventos() {
         error.response?.data?.mensagem ||
         "Erro ao remover indisponibilidade"
       )
+    } finally {
+      setRemovendoIndisponibilidade(false)
     }
   }
 
@@ -330,7 +389,7 @@ function abrirDetalhesEvento(evento) {
             <button
               type="button"
               onClick={() => {
-                setErroFormulario("")
+                limparFormularioEvento()
                 setMostrarFormulario(true)
               }}
               className="
@@ -667,6 +726,7 @@ function abrirDetalhesEvento(evento) {
                 dataSelecionada
               )
 
+              setEventoEmEdicao(null)
               setErroFormulario("")
               setMostrarFormulario(true)
             }}
@@ -1109,19 +1169,34 @@ function abrirDetalhesEvento(evento) {
                 Ver escalas do evento
               </button>
 
+              {usuario?.tipo === "ADMIN" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => abrirEdicaoEvento(eventoSelecionado)}
+                    className="flex items-center justify-center gap-2 border border-blue-200 bg-blue-50 text-blue-700 px-3 py-3 rounded-xl text-sm font-semibold hover:bg-blue-100 transition"
+                  >
+                    <Pencil size={17} />
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEventoParaCancelar(eventoSelecionado)}
+                    className="flex items-center justify-center gap-2 border border-red-200 bg-red-50 text-red-700 px-3 py-3 rounded-xl text-sm font-semibold hover:bg-red-100 transition"
+                  >
+                    <XCircle size={17} />
+                    Cancelar evento
+                  </button>
+                </div>
+              )}
+
               {buscarIndisponibilidade(
                 eventoSelecionado.id
               ) ? (
                 <button
                   type="button"
-                  onClick={async () => {
-                    await removerIndisponibilidade(
-                      eventoSelecionado.id
-                    )
-
-                    setMostrarDetalhesEvento(false)
-                    setEventoSelecionado(null)
-                  }}
+                  onClick={() => setEventoParaDisponibilizar(eventoSelecionado)}
                   className="
                     w-full
                     border border-slate-200
@@ -1180,27 +1255,27 @@ function abrirDetalhesEvento(evento) {
       {mostrarFormulario && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 
-          <div className="w-full max-w-lg bg-white rounded-2xl p-6">
+          <div className="w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white rounded-2xl p-6">
 
             <div className="flex items-center justify-between">
 
               <div>
 
                 <h2 className="text-xl font-bold text-slate-900">
-                  Novo evento
+                  {eventoEmEdicao ? "Editar evento" : "Novo evento"}
                 </h2>
 
                 <p className="text-sm text-slate-500 mt-1">
-                  Cadastre uma nova celebração ou evento.
+                  {eventoEmEdicao
+                    ? "Atualize as informações do evento selecionado."
+                    : "Cadastre uma nova celebração ou evento."}
                 </p>
 
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setMostrarFormulario(false)
-                }
+                onClick={fecharFormularioEvento}
                 className="text-slate-500 hover:text-slate-900"
               >
                 ✕
@@ -1209,7 +1284,7 @@ function abrirDetalhesEvento(evento) {
             </div>
 
             <form
-              onSubmit={criarEvento}
+              onSubmit={salvarEvento}
               className="space-y-5 mt-6"
             >
 
@@ -1341,9 +1416,7 @@ function abrirDetalhesEvento(evento) {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setMostrarFormulario(false)
-                  }
+                  onClick={fecharFormularioEvento}
                   className="border border-slate-300 px-4 py-2 rounded-lg"
                 >
                   Cancelar
@@ -1356,6 +1429,8 @@ function abrirDetalhesEvento(evento) {
                 >
                   {salvando
                     ? "Salvando..."
+                    : eventoEmEdicao
+                    ? "Salvar alterações"
                     : "Criar evento"}
                 </button>
 
@@ -1367,6 +1442,30 @@ function abrirDetalhesEvento(evento) {
 
         </div>
       )}
+
+      <ConfirmacaoModal
+        aberto={Boolean(eventoParaCancelar)}
+        titulo="Cancelar evento"
+        mensagem={eventoParaCancelar
+          ? `O evento “${eventoParaCancelar.titulo}” deixará de aparecer no calendário. As informações vinculadas serão preservadas.`
+          : ""}
+        textoConfirmar="Cancelar evento"
+        carregando={cancelandoEvento}
+        onConfirmar={() => cancelarEvento(eventoParaCancelar)}
+        onFechar={() => setEventoParaCancelar(null)}
+      />
+
+      <ConfirmacaoModal
+        aberto={Boolean(eventoParaDisponibilizar)}
+        titulo="Informar disponibilidade"
+        mensagem={eventoParaDisponibilizar
+          ? `Você voltará a aparecer como disponível para o evento “${eventoParaDisponibilizar.titulo}”.`
+          : ""}
+        textoConfirmar="Estou disponível"
+        carregando={removendoIndisponibilidade}
+        onConfirmar={() => removerIndisponibilidade(eventoParaDisponibilizar.id)}
+        onFechar={() => setEventoParaDisponibilizar(null)}
+      />
 
       {mostrarIndisponibilidade &&
         eventoIndisponibilidade && (

@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 
 import AppLayout from "../components/AppLayout"
+import ConfirmacaoModal from "../components/ConfirmacaoModal"
 import api from "../services/api"
 import {
   formatarData,
@@ -23,6 +24,8 @@ export default function MinhasEscalas() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState("")
   const [respondendo, setRespondendo] = useState(null)
+  const [escalaParaSair, setEscalaParaSair] = useState(null)
+  const [saindoDaEscala, setSaindoDaEscala] = useState(false)
 
   useEffect(() => {
     carregarEscalas()
@@ -73,21 +76,15 @@ export default function MinhasEscalas() {
   }
 
   async function sairDaEscala(itemId) {
-    const confirmar = window.confirm(
-      "Tem certeza que deseja sair desta escala? Sua vaga ficará disponível para outra pessoa."
-    )
-
-    if (!confirmar) {
-      return
-    }
-
     try {
+      setSaindoDaEscala(true)
       setErro("")
 
       await api.patch(
         `/escalas/itens/${itemId}/sair`
       )
 
+      setEscalaParaSair(null)
       await carregarEscalas()
 
     } catch (error) {
@@ -95,6 +92,8 @@ export default function MinhasEscalas() {
         error.response?.data?.mensagem ||
         "Erro ao sair da escala"
       )
+    } finally {
+      setSaindoDaEscala(false)
     }
   }
 
@@ -447,11 +446,7 @@ export default function MinhasEscalas() {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          sairDaEscala(
-                            escala.itemId
-                          )
-                        }
+                        onClick={() => setEscalaParaSair(escala)}
                         className="
                           w-full
                           sm:w-auto
@@ -479,6 +474,18 @@ export default function MinhasEscalas() {
 
         </div>
       )}
+
+      <ConfirmacaoModal
+        aberto={Boolean(escalaParaSair)}
+        titulo="Sair da escala"
+        mensagem={escalaParaSair
+          ? `Sua participação em “${escalaParaSair.evento.titulo}” será removida e a vaga ficará disponível para outra pessoa.`
+          : ""}
+        textoConfirmar="Sair da escala"
+        carregando={saindoDaEscala}
+        onConfirmar={() => sairDaEscala(escalaParaSair.itemId)}
+        onFechar={() => setEscalaParaSair(null)}
+      />
 
     </AppLayout>
   )

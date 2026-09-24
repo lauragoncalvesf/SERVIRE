@@ -502,3 +502,32 @@ export async function atualizarStatusEscala(req, res) {
     })
   }
 }
+
+export async function excluirEscala(req, res) {
+  try {
+    const escalaId = Number(req.params.escalaId)
+
+    if (!Number.isSafeInteger(escalaId) || escalaId < 1) {
+      return res.status(400).json({ mensagem: "Escala inválida" })
+    }
+
+    const escala = await prisma.escala.findFirst({
+      where: {
+        id: escalaId,
+        evento: { paroquiaId: req.paroquiaId }
+      },
+      select: { id: true }
+    })
+
+    if (!escala) {
+      return res.status(404).json({ mensagem: "Escala não encontrada" })
+    }
+
+    await prisma.escala.delete({ where: { id: escalaId } })
+
+    return res.json({ mensagem: "Escala excluída com sucesso" })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ mensagem: "Erro ao excluir escala" })
+  }
+}

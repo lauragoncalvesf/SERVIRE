@@ -2,6 +2,7 @@ import {
   criarEscala,
   listarEscalasEvento,
   atualizarStatusEscala,
+  excluirEscala,
 } from "../controllers/escalaController.js"
 import {
   adicionarItemEscala,
@@ -67,6 +68,13 @@ export default function escalaRoutes(app) {
     auth,
     permitirCoordenadorPorEscala(),
     atualizarStatusEscala
+    )
+
+    app.delete(
+    "/escalas/:escalaId",
+    auth,
+    permitirCoordenadorPorEscala(),
+    excluirEscala
     )
 
     app.patch(
