@@ -78,7 +78,7 @@ export default function Login() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="login-field">
-            <label htmlFor="login-paroquia">Paróquia (deixe vazia para conta global)</label>
+            <label htmlFor="login-paroquia">Paróquia</label>
             <div className="login-input-wrap">
               <Church aria-hidden="true" size={25} strokeWidth={1.8} />
               <input id="login-paroquia" type="number" min="1" step="1" value={paroquiaId}
