@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt"
-import jwt from "jsonwebtoken"
+import { assinarToken } from "../services/sessaoService.js"
 import prisma from "../lib/prisma.js"
 
 export async function login(req, res, next) {
@@ -64,19 +64,7 @@ export async function login(req, res, next) {
       })
     }
 
-    const token = jwt.sign(
-      {
-        usuarioId: usuario.id,
-        paroquiaId: usuario.paroquiaId,
-        tipo: usuario.tipo,
-        versaoSessao: usuario.versaoSessao ?? 0
-      },
-      process.env.JWT_SECRET,
-      {
-        algorithm: "HS256",
-        expiresIn: "7d"
-      }
-    )
+    const token = assinarToken(usuario)
 
     return res.json({
       mensagem: "Login realizado com sucesso",

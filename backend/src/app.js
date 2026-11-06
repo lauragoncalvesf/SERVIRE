@@ -18,6 +18,8 @@ import liturgiaRoutes from "./routes/liturgiaRoutes.js"
 
 import superadminRoutes from "./routes/superadminRoutes.js"
 
+import perfilRoutes from "./routes/perfilRoutes.js"
+
 const app = express()
 const proxyHops = Number(process.env.PROXY_HOPS ?? 0)
 if (Number.isInteger(proxyHops) && proxyHops > 0) {
@@ -78,6 +80,7 @@ app.get("/", (req, res) => {
   })
 })
 
+perfilRoutes(app)
 superadminRoutes(app)
 paroquiaRoutes(app)
 usuarioRoutes(app)

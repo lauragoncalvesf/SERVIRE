@@ -95,3 +95,22 @@ test("token antigo é revogado quando a versão de sessão muda", async t => {
   assert.equal(res.code, 401)
   assert.equal(next.mock.callCount(), 0)
 })
+
+test("conta global acessa apenas os endpoints pessoais explícitos e mantém bloqueio pastoral", async t => {
+  const original = process.env.JWT_SECRET
+  process.env.JWT_SECRET = segredo
+  t.after(() => { if (original === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = original })
+  findFirst.mock.mockImplementation(async ({ where }) => {
+    assert.equal(where.paroquiaId, null); assert.equal(where.tipo, "SUPER_ADMIN")
+    return { id: 7, paroquiaId: null, tipo: "SUPER_ADMIN", versaoSessao: 0 }
+  })
+  const token = assinar({ usuarioId: 7, paroquiaId: null, tipo: "SUPER_ADMIN", versaoSessao: 0 })
+  for (const path of ["/meu-perfil", "/meu-perfil/senha", "/pastorais", "/meu-perfil/outro"]) {
+    const req = { headers: { authorization: `Bearer ${token}` }, path, originalUrl: path }
+    const res = { status(code) { this.code = code; return this }, json(body) { this.body = body; return this } }
+    const next = mock.fn()
+    await auth(req, res, next)
+    assert.equal(next.mock.callCount(), ["/meu-perfil", "/meu-perfil/senha"].includes(path) ? 1 : 0)
+    if (!next.mock.callCount()) assert.equal(res.code, 403)
+  }
+})

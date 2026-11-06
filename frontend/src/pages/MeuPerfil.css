@@ -1,0 +1,13 @@
+.perfil-card{padding:1.5rem;border:1px solid #efe8d6;border-radius:1rem;background:#fff;min-width:0}
+.perfil-card h2{display:flex;align-items:center;gap:.65rem;font-size:1.15rem;font-weight:700;color:#1d5c9e}
+.perfil-descricao{font-size:.875rem;line-height:1.6;color:#64748b;margin:.75rem 0 1.25rem}
+.perfil-page label{display:block;margin-bottom:.45rem;font-size:.875rem;font-weight:600;color:#334155}
+.perfil-page input{display:block;width:100%;min-width:0;padding:.8rem 1rem;border:1px solid #cbd5e1;border-radius:.75rem;background:transparent;color:#0f172a}
+.perfil-page input[readonly]{background:#f8fafc;color:#64748b}
+.perfil-page :focus-visible{outline:3px solid #3481cc;outline-offset:2px}
+.perfil-senha{display:flex;align-items:center;border:1px solid #cbd5e1;border-radius:.75rem}
+.perfil-senha input{border:0;flex:1}.perfil-senha button{padding:.75rem;color:#64748b;border-radius:.65rem;cursor:pointer}
+.perfil-botao{padding:.8rem 1.15rem;border-radius:.75rem;background:#1d5c9e;color:#fff;font-weight:600;cursor:pointer}
+.perfil-botao:hover{background:#174a82}.perfil-page fieldset:disabled{opacity:.65}.perfil-page fieldset:disabled button{cursor:wait}
+.perfil-erro,.perfil-sucesso{padding:1rem;border-radius:.75rem;font-size:.9rem}.perfil-erro{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}.perfil-sucesso{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+html[data-theme="escuro"] .perfil-card{background:#17283d;border-color:#334155}html[data-theme="escuro"] .perfil-card h2{color:#93c5fd}html[data-theme="escuro"] .perfil-page label,html[data-theme="escuro"] .perfil-page input{color:#e2e8f0}html[data-theme="escuro"] .perfil-descricao{color:#94a3b8}html[data-theme="escuro"] .perfil-page input[readonly]{background:#0f1d2e;color:#94a3b8}

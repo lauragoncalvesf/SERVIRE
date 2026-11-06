@@ -61,6 +61,13 @@ export function AuthProvider({ children }) {
     return usuario
   }
 
+  function atualizarSessao({ usuario: atualizado, token }) {
+    // O servidor fornece apenas os campos públicos do perfil.
+    if (token) localStorage.setItem("token", token)
+    localStorage.setItem("usuario", JSON.stringify(atualizado))
+    setUsuario(atualizado)
+  }
+
   function logout() {
     localStorage.removeItem("token")
     localStorage.removeItem("usuario")
@@ -75,6 +82,7 @@ export function AuthProvider({ children }) {
         carregandoSessao,
         login,
         logout,
+        atualizarSessao,
         autenticado: !!usuario
       }}
     >

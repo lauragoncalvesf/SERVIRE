@@ -8,6 +8,7 @@ import {
   Moon,
   Sun,
   Users,
+  Settings,
   X
 } from "lucide-react"
 
@@ -221,39 +222,19 @@ export default function AppLayout({
             "
           >
 
-            <div
-              className="
-                mb-3
-                px-3
-                py-3
-                rounded-xl
-                bg-white/10
-              "
+            <NavLink
+              to="/meu-perfil"
+              aria-label="Meu Perfil"
+              title="Meu Perfil"
+              onClick={() => setMenuAberto(false)}
+              className={({ isActive }) => `mb-3 flex items-center justify-between gap-3 rounded-xl px-3 py-3 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${isActive ? "bg-white/20" : "bg-white/10 hover:bg-white/20"}`}
             >
-
-              <p
-                className="
-                  font-semibold
-                  text-sm
-                  text-white
-                "
-              >
-                {usuario?.nome}
-              </p>
-
-              <p
-                className="
-                  text-xs
-                  text-white/65
-                  mt-1
-                "
-              >
-                {formatarTipoUsuario(
-                  usuario?.tipo
-                )}
-              </p>
-
-            </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">{usuario?.nome}</p>
+                <p className="mt-1 text-xs text-white/65">{formatarTipoUsuario(usuario?.tipo)}</p>
+              </div>
+              <Settings size={19} className="shrink-0 text-white/80" aria-hidden="true" />
+            </NavLink>
 
             <button
               type="button"

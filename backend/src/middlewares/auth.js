@@ -58,7 +58,8 @@ export async function auth(req, res, next) {
     req.usuarioId = usuario.id
     req.paroquiaId = usuario.paroquiaId
     req.tipoUsuario = usuario.tipo
-    if (usuario.tipo === "SUPER_ADMIN" && !req.originalUrl?.startsWith("/superadmin/") && req.path !== "/auth/sessao") {
+    req.versaoSessao = usuario.versaoSessao ?? 0
+    if (usuario.tipo === "SUPER_ADMIN" && !req.originalUrl?.startsWith("/superadmin/") && !["/auth/sessao", "/meu-perfil", "/meu-perfil/senha"].includes(req.path)) {
       return res.status(403).json({ mensagem: "Conta global sem acesso às operações paroquiais" })
     }
   } catch (error) {
