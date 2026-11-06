@@ -234,3 +234,7 @@ O Servire busca centralizar essas informações em uma única plataforma, tornan
 Desenvolvido por **Laura Gonçalves**.
 
 Projeto desenvolvido com foco na aplicação prática de conceitos de desenvolvimento web, APIs REST, bancos de dados relacionais, autenticação e modelagem de sistemas.
+
+## Convites de administradores por e-mail
+
+O cadastro e a reemissão de convites podem enviar e-mails automaticamente via Nodemailer/SMTP. Consulte [Configuração e testes do envio de convites](docs/EMAIL_CONVITES.md) e [Administração global](docs/SUPERADMIN.md). O envio exige `FRONTEND_URL` pública HTTPS e as variáveis SMTP; falhas preservam o cadastro e permitem entrega manual.

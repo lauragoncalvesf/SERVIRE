@@ -6,7 +6,7 @@ Implementação local, sem commit, push, deploy ou acesso ao banco do `.env` dur
 
 - Login único em `/login`. Contas paroquiais informam o ID da paróquia; a conta global deixa esse campo vazio. O backend consulta o perfil atual e a atividade da conta/paróquia, sem confiar no perfil enviado.
 - Painel `/superadmin`: indicadores reais, busca por nome/cidade, status, paginação de 20 paróquias, cadastro, detalhes, edição, ativação/desativação e administradores por paróquia.
-- Cadastro de administrador sempre fixa `ADMIN`, com senha aleatória desconhecida; o administrador define a senha por convite de 48 horas. O link aparece uma única vez na resposta da operação e no diálogo da interface. Não existe envio de e-mail configurado/implementado.
+- Cadastro de administrador sempre fixa `ADMIN`, com senha aleatória desconhecida; o administrador define a senha por convite de 48 horas. O convite é enviado automaticamente por SMTP após o commit, quando configurado. O link aparece na resposta e no diálogo somente se o envio não for confirmado; veja [Configuração de e-mail](EMAIL_CONVITES.md).
 - Convites têm 256 bits de entropia, somente SHA-256 persistido, consumo condicional e transação serializável. Nova emissão invalida convites anteriores. Senha exige 12 caracteres com letras e números e no máximo 72 bytes (limite do bcrypt). Não há senha compartilhada.
 - Transferência ocorre entre administradores ativos da mesma paróquia. O sucessor deve ter aceitado o convite; o anterior passa a membro. Não movemos usuários e seus históricos para outra paróquia.
 - Contas globais não acessam operações pastorais autenticadas. `ADMIN` permanece limitado à própria paróquia. Coordenação permanece em `MembroPastoral.papel`, podendo incluir diversas pastorais.
@@ -40,7 +40,7 @@ Todas as rotas `/superadmin/*` exigem JWT e `SUPER_ADMIN` atual do banco:
 | POST | `/superadmin/admins/:id/convite` | Novo convite e invalidação do anterior |
 | POST | `/superadmin/admins/:id/transferir` | Corpo `{ "sucessorId": 123 }` |
 
-`GET /auth/sessao` exige JWT e retorna somente campos seguros. `POST /auth/aceitar-convite` recebe `{ token, senha }`, com limitador de tentativas compartilhado com login. Tokens são retornados somente na criação/emissão do convite, com `Cache-Control: no-store`. A interface usa fragmento `#token=...`, removido após abertura, para evitar envio do segredo em URLs ao servidor/referer.
+`GET /auth/sessao` exige JWT e retorna somente campos seguros. `POST /auth/aceitar-convite` recebe `{ token, senha }`, com limitador de tentativas compartilhado com login. Tokens são retornados na criação/emissão somente quando o envio por e-mail não for confirmado, com `Cache-Control: no-store`. A interface usa fragmento `#token=...`, removido após abertura, para evitar envio do segredo em URLs ao servidor/referer.
 
 ## Validação local
 
@@ -100,19 +100,19 @@ Não coloque esses valores no código, `.env` versionado, histórico de comandos
 2. Versione/push somente após aprovação. Mantenha os Root Directories existentes.
 3. Backend: build `npm ci && npx prisma generate`; pre-deploy `npx prisma migrate deploy`; start `npm start`. Publique backend e migrações antes do frontend para que `/auth/sessao` já exista.
 4. Frontend: build `npm run build`; start `npx --yes serve@14 -s dist -l tcp://0.0.0.0:$PORT`.
-5. Preserve `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `PROXY_HOPS`, `CORS_ORIGINS`, `VITE_API_URL`; nenhuma variável nova é obrigatória para os serviços. `SUPERADMIN_NOME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_SENHA` são temporárias, só para bootstrap. `TEST_DATABASE_URL` é exclusiva dos testes locais.
+5. Preserve `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `PROXY_HOPS`, `CORS_ORIGINS`, `VITE_API_URL`; o envio automático requer também `FRONTEND_URL` e as variáveis SMTP descritas em [EMAIL_CONVITES.md](EMAIL_CONVITES.md). Sem elas, permanece disponível a entrega manual. `SUPERADMIN_NOME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_SENHA` são temporárias, só para bootstrap. `TEST_DATABASE_URL` é exclusiva dos testes locais.
 6. Com autorização específica, rode uma vez o bootstrap no ambiente backend de produção. Não é executado automaticamente por esta implementação.
 7. Confira login global, indicadores, cadastro de paróquia e convite. Abra o convite em sessão privada, defina senha e confirme login paroquial. Teste bloqueio de rotas globais com perfil comum e desativação/reativação.
 8. Em caso de regressão, preserve as migrações aditivas; não execute reset ou rollback destrutivo. Reverta código de forma coordenada, considerando o frontend dependente de `/auth/sessao` e a nova conta global.
 
-## Futura entrega por e-mail
+## Envio automático de convites
 
-Integre um serviço de envio no fluxo de emissão, usando origem frontend configurada e confiável. Use uma fila/outbox transacional para não informar entrega antes de confirmação do provedor. Não persista tokens em texto puro nem registre o link em logs. A versão atual apresenta claramente que **nenhum e-mail foi enviado** e fornece o link ao operador uma única vez.
+Implementado com Nodemailer, após confirmação da transação e sem repetição automática. O painel distingue `enviado`, `nao_enviado` e `nao_configurado`; em falhas, preserva o cadastro e oferece entrega manual. Credenciais e tokens não são registrados em logs. Consulte [EMAIL_CONVITES.md](EMAIL_CONVITES.md) para variáveis, Gmail, testes e limites de entrega.
 
 ## Resultado da validação
 
-- 105 testes automatizados aprovados, nenhuma falha.
-- 56 verificações de integração em PostgreSQL 15 descartável aprovadas, incluindo bootstrap e rejeição de duplicação, migrações com dados existentes, deploy completo e rollback por falha de auditoria.
+- Módulo original: 105 testes automatizados aprovados. Com envio de e-mail: 119 testes aprovados, nenhuma falha; todos os transportes SMTP utilizados nos testes são simulados.
+- Na validação original, 56 verificações de integração em PostgreSQL 15 descartável aprovadas, incluindo bootstrap e rejeição de duplicação, migrações com dados existentes, deploy completo e rollback por falha de auditoria.
 - Prisma Client 7.10 gerado e schema válido.
 - Build Vite e lint do frontend aprovados; sintaxe do backend e `git diff --check` aprovados.
 - O erro simulado de auditoria produz intencionalmente um registro sanitizado de erro no teste de rollback.

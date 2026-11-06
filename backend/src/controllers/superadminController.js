@@ -1,3 +1,4 @@
+import { entregarConvite } from "../services/conviteEmailService.js"
 import prisma from "../lib/prisma.js"
 import { randomBytes } from "node:crypto"
 import bcrypt from "bcrypt"
@@ -56,14 +57,16 @@ export async function criarAdmin(req, res) {
   const dados = dadosPessoa(req.body)
   const senha = await bcrypt.hash(randomBytes(32).toString("hex"), 12)
   const resultado = await executarTransacao(async tx => {
-    if (!await tx.paroquia.findFirst({ where: { id: paroquiaId, ativa: true } })) falhar(400, "Paróquia inexistente ou inativa")
+    const paroquia = await tx.paroquia.findFirst({ where: { id: paroquiaId, ativa: true } })
+    if (!paroquia) falhar(400, "Paróquia inexistente ou inativa")
     if (await tx.usuario.findFirst({ where: { paroquiaId, email: { equals: dados.email, mode: "insensitive" } } })) falhar(409, "E-mail já cadastrado nesta paróquia")
     const usuario = await tx.usuario.create({ data: { ...dados, senha, paroquiaId, tipo: "ADMIN" }, select: usuarioSeguro })
     const convite = await emitirConvite(tx, usuario.id)
     await auditar(tx, req.usuarioId, "CRIAR_ADMIN", "Usuario", usuario.id)
-    return { usuario, convite }
+    return { usuario, convite, paroquia: paroquia.nome }
   })
-  res.set("Cache-Control", "no-store").status(201).json(resultado)
+  const entrega = await entregarConvite(resultado)
+  res.set("Cache-Control", "no-store").status(201).json({ usuario: resultado.usuario, ...entrega })
 }
 export async function editarAdmin(req, res) {
   const id = idValido(req.params.id)
@@ -94,12 +97,18 @@ export async function statusAdmin(req, res) {
 }
 export async function conviteAdmin(req, res) {
   const id = idValido(req.params.id)
-  res.set("Cache-Control", "no-store").json(await executarTransacao(async tx => {
-    if (!await tx.usuario.findFirst({ where: { id, tipo: "ADMIN", ativo: true, paroquia: { ativa: true } } })) falhar(404, "Administrador indisponível")
+  const resultado = await executarTransacao(async tx => {
+    const usuario = await tx.usuario.findFirst({
+      where: { id, tipo: "ADMIN", ativo: true, paroquia: { ativa: true } },
+      select: { ...usuarioSeguro, paroquia: { select: { nome: true } } }
+    })
+    if (!usuario) falhar(404, "Administrador indisponível")
     const convite = await emitirConvite(tx, id)
     await auditar(tx, req.usuarioId, "EMITIR_CONVITE", "Usuario", id)
-    return { convite }
-  }))
+    return { usuario, convite, paroquia: usuario.paroquia.nome }
+  })
+  const entrega = await entregarConvite(resultado)
+  res.set("Cache-Control", "no-store").json(entrega)
 }
 export async function transferir(req, res) {
   const id = idValido(req.params.id)
