@@ -55,7 +55,10 @@ test("falha ou recusa SMTP não registra segredos e não tenta enviar novamente"
   assert.deepEqual(resultado, { status: "nao_enviado", motivo: "FALHA_SMTP" })
   assert.equal(sendMail.mock.callCount(), 1)
   assert(!JSON.stringify(resultado).includes(env.SMTP_PASS)); assert(!JSON.stringify(resultado).includes(token))
-  for (const log of logs) assert.equal(log.mock.callCount(), 0)
+  for (const log of logs.filter(log => log !== console.warn)) assert.equal(log.mock.callCount(), 0)
+  assert.deepEqual(JSON.parse(console.warn.mock.calls[0].arguments[0]), {
+    evento: "smtp_falha", categoria: "DESCONHECIDO", codigo: "NAO_CLASSIFICADO", etapa: "DESCONHECIDA"
+  })
   for (const resposta of [{ accepted: [], rejected: [mensagem.para] }, {}, { accepted: [mensagem.para], pending: [mensagem.para] }]) {
     const s = criarServicoEmail({ env, criarTransporte: () => ({ sendMail: async () => resposta }) })
     assert.equal((await s.enviar(mensagem)).status, "nao_enviado")

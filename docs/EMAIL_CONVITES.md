@@ -42,7 +42,7 @@ Gmail pode limitar mensagens, bloquear autenticações ou direcionar convites pa
 | `nao_enviado` | Configuração inválida ou envio não confirmado; cadastro e convite preservados |
 | `nao_configurado` | Configuração SMTP incompleta ou envio bloqueado no ambiente de teste |
 
-`envio.motivo`, quando presente, contém somente um código controlado, como `SMTP_AUSENTE`, `SMTP_INVALIDO`, `FALHA_SMTP` ou `FRONTEND_URL_INVALIDA`; nunca mensagens brutas do provedor.
+`envio.motivo`, quando presente, contém somente um código controlado, como `SMTP_AUSENTE`, `SMTP_INVALIDO`, `FALHA_SMTP` ou `FRONTEND_URL_INVALIDA`; nunca mensagens brutas do provedor. Falhas SMTP também geram logs sanitizados descritos em **Diagnóstico SMTP no Railway**, abaixo.
 
 Após confirmação SMTP, `convite` contém somente `expiraEm`. Em falha/ausência de configuração, contém também `token` e, se a origem pública for válida, `link`. A interface mostra esse link somente no diálogo daquela operação, permitindo selecioná-lo e copiá-lo. Nada é gravado no localStorage, em logs ou em banco em texto puro. Somente o SHA-256 continua persistido no banco. As respostas permanecem com `Cache-Control: no-store`.
 
@@ -68,7 +68,7 @@ npm run build
 npm run lint
 ```
 
-Resultado desta alteração: **119 testes de backend aprovados**, incluindo 14 testes novos de configuração, TLS, sucesso, recusa/falha SMTP, link público, escape HTML, omissão de token, alternativa manual, ausência de logs, rollback/commit e repetição transacional sem duplicar o envio. Build e lint do frontend aprovados. O build mantém o aviso de bundle acima de 500 kB.
+Resultado inicial do envio automático: **119 testes de backend aprovados**, incluindo 14 testes novos de configuração, TLS, sucesso, recusa/falha SMTP, link público, escape HTML, omissão de token, alternativa manual, ausência de logs, rollback/commit e repetição transacional sem duplicar o envio. Build e lint do frontend aprovados. O build mantém o aviso de bundle acima de 500 kB.
 
 `npm test` força `NODE_ENV=test`. Os testes unitários usam transporte simulado e valores SMTP fictícios. O serviço também bloqueia transporte real com `NODE_ENV=test`, mesmo se houver credenciais no ambiente. A suíte de integração PostgreSQL preexistente já define esse modo. Nenhum comando de teste inicia um envio real ou acessa o SMTP configurado no `.env`.
 
@@ -94,3 +94,30 @@ Modificados:
 - `docs/SUPERADMIN.md` e `README.md`: documentação atualizada.
 
 Não houve commit, push, deploy, migrações ou alterações de variáveis no Railway.
+
+## Diagnóstico SMTP no Railway
+
+O serviço registra uma linha JSON com `evento=smtp_falha` por tentativa malsucedida. Após a publicação autorizada deste diagnóstico, filtre os logs do **backend** por `smtp_falha`. Exemplo sem dados reais:
+
+```json
+{"evento":"smtp_falha","categoria":"AUTENTICACAO","codigo":"EAUTH","etapa":"AUTH","respostaSmtp":535}
+```
+
+| Categoria | Indicação técnica e próximo ponto de investigação |
+|---|---|
+| `CONEXAO` | `ECONNREFUSED`, `ECONNRESET`, `ENETUNREACH`, etc.: conexão recusada, interrompida ou sem rota. Verifique conectividade e saída SMTP do ambiente; o código sozinho não comprova bloqueio do Railway. |
+| `TIMEOUT` | `ETIMEDOUT`/`ESOCKETTIMEDOUT`: o servidor não respondeu no prazo. `tipoTimeout`, se disponível, distingue `CONNECT_TIMEOUT`, `GREETING_TIMEOUT`, `UPGRADE_TIMEOUT` e `SOCKET_TIMEOUT`. |
+| `DNS` | `ENOTFOUND`, `EAI_AGAIN`, `EAI_FAIL` ou `EDNS`: resolução do servidor SMTP falhou. Confira o host e o DNS do ambiente. |
+| `TLS` | Falha de certificado, protocolo ou STARTTLS. Confira porta/`SMTP_SECURE`, certificado e negociação TLS. A validação de certificado permanece obrigatória. |
+| `AUTENTICACAO` | `EAUTH` ou falha na etapa AUTH; resposta 535 indica recusa de autenticação. Confira usuário, senha de aplicativo e política da conta Gmail sem copiar credenciais para logs. |
+| `DESTINATARIO` | Recusa SMTP em `RCPT TO` ou lista `rejected` não vazia; não registra o endereço. O status SMTP numérico, quando presente no erro, ajuda a distinguir resposta temporária (4xx) e permanente (5xx). |
+| `NAO_CONFIRMADO` | O resultado não confirmou a aceitação da mensagem, sem recusa explícita de destinatário. |
+| `DESCONHECIDO` | Nenhum código permitido reconhecido. O sistema não tenta extrair detalhes da mensagem livre do erro. |
+
+O diagnóstico reconhece também `originalCode` e `cause.code` para erros de rede encapsulados pelo Nodemailer. Uma interrupção de rede durante AUTH ou RCPT é classificada como conexão, sem atribuir indevidamente a falha à senha ou ao destinatário.
+
+Somente categoria, código permitido, etapa permitida, resposta SMTP numérica entre 400 e 599 e tipo de timeout permitido são registrados. Códigos desconhecidos viram `NAO_CLASSIFICADO` ou `TLS_OUTRO`; etapas desconhecidas viram `DESCONHECIDA`. Não são registrados host, usuário, senha, destinatário, token, link, conteúdo, mensagem, resposta textual, stack ou objeto do erro. Logger/debug do Nodemailer continuam desativados.
+
+A API permanece compatível: exceções de transporte retornam `nao_enviado`/`FALHA_SMTP`; resultados não confirmados retornam `SMTP_NAO_CONFIRMADO`. O detalhamento fica somente nos logs sanitizados. Cadastro, transações, prazo e consumo dos convites, permissões e alternativa manual permanecem intactos; `conviteEmailService.js` não precisou de alteração.
+
+Validação do diagnóstico: **138 testes de backend aprovados**, incluindo 19 novos testes de classificação, campos não confiáveis, ausência de dados sensíveis, recusa em resultado, sucesso sem log de falha e preservação do convite manual. A suíte força `NODE_ENV=test`; os novos testes usam transportes simulados. Nenhum envio real, acesso ao Railway, alteração de banco, commit, push ou deploy foi executado.
