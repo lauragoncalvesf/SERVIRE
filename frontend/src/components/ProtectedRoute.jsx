@@ -1,8 +1,10 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "../contexts/auth"
 
-export default function ProtectedRoute({ children }) {
-  const { autenticado } = useAuth()
+export default function ProtectedRoute({ children, global = false }) {
+  const { autenticado, usuario, carregandoSessao } = useAuth()
+
+  if (carregandoSessao) return <p role="status">Validando sessão...</p>
 
   if (!autenticado) {
     return (
@@ -13,5 +15,7 @@ export default function ProtectedRoute({ children }) {
     )
   }
 
+  if (global && usuario?.tipo !== "SUPER_ADMIN") return <Navigate to="/dashboard" replace />
+  if (!global && usuario?.tipo === "SUPER_ADMIN") return <Navigate to="/superadmin" replace />
   return children
 }

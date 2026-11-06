@@ -15,6 +15,7 @@ model LoginAttempt {
 }
 
 enum TipoUsuario {
+  SUPER_ADMIN
   ADMIN
   MEMBRO
 }
@@ -85,8 +86,10 @@ model Usuario {
   criadoEm     DateTime    @default(now())
   atualizadoEm DateTime    @updatedAt
 
-  paroquiaId Int
-  paroquia   Paroquia @relation(fields: [paroquiaId], references: [id], onDelete: Cascade)
+  versaoSessao Int @default(0)
+  convites ConviteAdmin[]
+  paroquiaId Int?
+  paroquia   Paroquia? @relation(fields: [paroquiaId], references: [id], onDelete: Cascade)
 
   pastorais          MembroPastoral[]
   itensEscala        ItemEscala[]
@@ -268,4 +271,23 @@ model Notificacao {
   @@index([usuarioId, lidaEm])
   @@index([eventoId])
   @@index([escalaId])
+}
+
+model ConviteAdmin {
+  id Int @id @default(autoincrement())
+  tokenHash String @unique
+  usuarioId Int
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  expiraEm DateTime
+  consumidoEm DateTime?
+  criadoEm DateTime @default(now())
+}
+
+model AuditoriaAdmin {
+  id Int @id @default(autoincrement())
+  autorId Int
+  acao String
+  recurso String
+  recursoId Int
+  criadoEm DateTime @default(now())
 }

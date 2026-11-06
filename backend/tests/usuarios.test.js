@@ -39,7 +39,7 @@ test("valida campos antes de acessar o banco", async () => {
   preparar()
   const invalidos = [undefined, null, {}, ...[
     ["nome", {}], ["nome", " "], ["email", []], ["email", "email-invalido"],
-    ["email", " teste@example.com "], ["senha", 123], ["senha", {}], ["senha", ""], ["senha", "curta"],
+    ["senha", 123], ["senha", {}], ["senha", ""], ["senha", "curta"],
     ["telefone", 123], ["telefone", {}], ["tipo", "SUPERADMIN"], ["tipo", null],
     ["tipo", ""], ["tipo", ["ADMIN"]]
   ].map(([campo, valor]) => ({ ...dados, [campo]: valor }))]

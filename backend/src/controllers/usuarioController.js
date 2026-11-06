@@ -1,3 +1,5 @@
+import { executarTransacao } from "../services/transacao.js"
+import { protegerUltimoAdmin, auditar } from "../services/superadminService.js"
 import bcrypt from "bcrypt"
 import prisma from "../lib/prisma.js"
 
@@ -5,12 +7,13 @@ export async function criarUsuario(req, res, next) {
   try {
     const {
       nome,
-      email,
+      email: emailOriginal,
       senha,
       telefone,
       tipo
     } = req.body ?? {}
 
+    const email = typeof emailOriginal === "string" ? emailOriginal.trim().toLowerCase() : emailOriginal
     const paroquiaId = req.paroquiaId
 
     const ehAdmin =
@@ -334,18 +337,25 @@ export async function atualizarUsuario(req, res, next) {
       })
     }
 
-    const usuarioAtualizado = await prisma.usuario.update({
+    const usuarioAtualizado = await executarTransacao(async tx => {
+      const atual = await tx.usuario.findFirst({ where: { id: usuarioId, paroquiaId: req.paroquiaId } })
+      if (!atual) throw Object.assign(new Error("Usuário não encontrado"), { status: 404, publica: true })
+      if (atual.tipo === "ADMIN" && (ativo === false || (tipo !== undefined && tipo !== "ADMIN"))) await protegerUltimoAdmin(tx, atual)
+      await tx.conviteAdmin.updateMany({ where: { usuarioId, consumidoEm: null }, data: { consumidoEm: new Date() } })
+      await auditar(tx, req.usuarioId, "EDITAR_USUARIO_PAROQUIAL", "Usuario", usuarioId)
+      return tx.usuario.update({
       where: {
         id: usuarioId
       },
 
       data: {
+        versaoSessao: { increment: 1 },
         ...(nome !== undefined && {
           nome: nome.trim()
         }),
 
         ...(email !== undefined && {
-          email: email.trim()
+          email: email.trim().toLowerCase()
         }),
 
         ...(telefone !== undefined && {
@@ -372,6 +382,8 @@ export async function atualizarUsuario(req, res, next) {
         paroquiaId: true,
         criadoEm: true
       }
+    })
+
     })
 
     return res.json(usuarioAtualizado)

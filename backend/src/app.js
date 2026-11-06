@@ -16,6 +16,8 @@ import funcaoEscalaRoutes from "./routes/funcaoEscalaRoutes.js"
 import notificacaoRoutes from "./routes/notificacaoRoutes.js"
 import liturgiaRoutes from "./routes/liturgiaRoutes.js"
 
+import superadminRoutes from "./routes/superadminRoutes.js"
+
 const app = express()
 const proxyHops = Number(process.env.PROXY_HOPS ?? 0)
 if (Number.isInteger(proxyHops) && proxyHops > 0) {
@@ -76,6 +78,7 @@ app.get("/", (req, res) => {
   })
 })
 
+superadminRoutes(app)
 paroquiaRoutes(app)
 usuarioRoutes(app)
 pastoralRoutes(app)

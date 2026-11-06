@@ -17,8 +17,8 @@ export async function limitarLogin(req, res, next) {
     const ip = req.ip || req.socket?.remoteAddress || "desconhecido"
     const chaves = [chave(`ip:${ip}`)]
 
-    if (email && ["string", "number"].includes(typeof paroquiaId)) {
-      chaves.push(chave(`conta:${paroquiaId}:${email}`))
+    if (email) {
+      chaves.push(chave(`conta:${paroquiaId ?? "global"}:${email}`))
     }
 
     for (const key of chaves) {

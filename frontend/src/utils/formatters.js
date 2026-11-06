@@ -102,6 +102,7 @@ export function formatarPapelPastoral(papel) {
 
 export function formatarTipoUsuario(tipo) {
   const tipos = {
+    SUPER_ADMIN: "Superadministrador",
     ADMIN: "Administrador",
     MEMBRO: "Membro"
   }

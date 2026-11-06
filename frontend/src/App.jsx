@@ -20,12 +20,17 @@ import EventoEscalas from "./pages/EventoEscalas"
 import MinhasEscalas from "./pages/MinhasEscalas"
 import Usuarios from "./pages/Usuarios"
 
+import Superadmin from "./pages/Superadmin"
+import AceitarConvite from "./pages/AceitarConvite"
+
 function App() {
   return (
     <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/superadmin" element={<ProtectedRoute global><Superadmin /></ProtectedRoute>} />
+          <Route path="/aceitar-convite" element={<AceitarConvite />} />
 
           <Route
             path="/"

@@ -10,32 +10,32 @@ export async function login(req, res, next) {
       paroquiaId
     } = req.body ?? {}
 
-    if (!email || !senha || !paroquiaId) {
+    if (!email || !senha) {
       return res.status(400).json({
-        mensagem: "Email, senha e paroquiaId são obrigatórios"
+        mensagem: "Email e senha são obrigatórios"
       })
     }
 
     if (
       typeof email !== "string" || !email.trim() ||
       typeof senha !== "string" ||
-      !["string", "number"].includes(typeof paroquiaId)
+      (paroquiaId != null && paroquiaId !== "" && !["string", "number"].includes(typeof paroquiaId))
     ) {
       return res.status(400).json({ mensagem: "Dados de login inválidos" })
     }
 
-    const idParoquia = Number(paroquiaId)
+    const idParoquia = paroquiaId == null || paroquiaId === "" ? null : Number(paroquiaId)
 
-    if (!Number.isInteger(idParoquia) || idParoquia < 1 || idParoquia > 2147483647) {
+    if (idParoquia !== null && (!Number.isInteger(idParoquia) || idParoquia < 1 || idParoquia > 2147483647)) {
       return res.status(400).json({ mensagem: "paroquiaId inválido" })
     }
 
     const usuario = await prisma.usuario.findFirst({
       where: {
-        email,
+        email: { equals: email.trim(), mode: "insensitive" },
         paroquiaId: idParoquia,
         ativo: true,
-        paroquia: { ativa: true }
+        ...(idParoquia === null ? { tipo: "SUPER_ADMIN" } : { paroquia: { ativa: true } })
       },
       include: {
         paroquia: {
@@ -68,7 +68,8 @@ export async function login(req, res, next) {
       {
         usuarioId: usuario.id,
         paroquiaId: usuario.paroquiaId,
-        tipo: usuario.tipo
+        tipo: usuario.tipo,
+        versaoSessao: usuario.versaoSessao ?? 0
       },
       process.env.JWT_SECRET,
       {

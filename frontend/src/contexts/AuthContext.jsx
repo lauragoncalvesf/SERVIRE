@@ -21,6 +21,17 @@ export function AuthProvider({ children }) {
     }
   })
 
+  const [carregandoSessao, setCarregandoSessao] = useState(!!localStorage.getItem("token"))
+
+  useEffect(() => {
+    if (!localStorage.getItem("token")) return
+    let ativo = true
+    api.get("/auth/sessao").then(({ data }) => {
+      if (ativo) { setUsuario(data); localStorage.setItem("usuario", JSON.stringify(data)) }
+    }).catch(() => { if (ativo) setUsuario(null) }).finally(() => { if (ativo) setCarregandoSessao(false) })
+    return () => { ativo = false }
+  }, [])
+
   useEffect(() => {
     const encerrarSessao = () => setUsuario(null)
     window.addEventListener("sessao-expirada", encerrarSessao)
@@ -61,6 +72,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         usuario,
+        carregandoSessao,
         login,
         logout,
         autenticado: !!usuario

@@ -47,7 +47,7 @@ test("login usa usuário e paróquia ativos e emite token compatível sem expor 
   })
   findFirst.mock.mockImplementation(async ({ where }) => {
     assert.deepEqual(where, {
-      email: dados.email, paroquiaId: 3, ativo: true, paroquia: { ativa: true }
+      email: { equals: dados.email, mode: "insensitive" }, paroquiaId: 3, ativo: true, paroquia: { ativa: true }
     })
     return usuario
   })

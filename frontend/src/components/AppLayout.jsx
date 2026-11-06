@@ -37,7 +37,7 @@ export default function AppLayout({
     navigate("/login", { replace: true })
   }
 
-  const menu = [
+  const menu = usuario?.tipo === "SUPER_ADMIN" ? [{ nome: "Administração geral", caminho: "/superadmin", icone: Church }] : [
     {
       nome: "Dashboard",
       caminho: "/dashboard",
@@ -382,7 +382,7 @@ export default function AppLayout({
             >
               {tema === "claro" ? <Moon size={20} /> : <Sun size={20} />}
             </button>
-            <NotificacoesMenu />
+            {usuario?.tipo !== "SUPER_ADMIN" && <NotificacoesMenu />}
           </div>
 
         </header>

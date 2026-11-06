@@ -29,7 +29,7 @@ export async function auth(req, res, next) {
   if (
     !payload || typeof payload !== "object" ||
     !Number.isSafeInteger(payload.usuarioId) || payload.usuarioId < 1 ||
-    !Number.isSafeInteger(payload.paroquiaId) || payload.paroquiaId < 1 ||
+    (payload.paroquiaId !== null && (!Number.isSafeInteger(payload.paroquiaId) || payload.paroquiaId < 1)) ||
     !Number.isSafeInteger(payload.exp)
   ) {
     return res.status(401).json({ mensagem: "Token inválido" })
@@ -41,22 +41,26 @@ export async function auth(req, res, next) {
         id: payload.usuarioId,
         paroquiaId: payload.paroquiaId,
         ativo: true,
-        paroquia: { ativa: true }
+        ...(payload.paroquiaId === null ? { tipo: "SUPER_ADMIN" } : { paroquia: { ativa: true } })
       },
       select: {
         id: true,
         paroquiaId: true,
-        tipo: true
+        tipo: true,
+        versaoSessao: true
       }
     })
 
-    if (!usuario) {
+    if (!usuario || (payload.versaoSessao ?? 0) !== (usuario.versaoSessao ?? 0)) {
       return res.status(401).json({ mensagem: "Usuário ou paróquia indisponível" })
     }
 
     req.usuarioId = usuario.id
     req.paroquiaId = usuario.paroquiaId
     req.tipoUsuario = usuario.tipo
+    if (usuario.tipo === "SUPER_ADMIN" && !req.originalUrl?.startsWith("/superadmin/") && req.path !== "/auth/sessao") {
+      return res.status(403).json({ mensagem: "Conta global sem acesso às operações paroquiais" })
+    }
   } catch (error) {
     return next(error)
   }

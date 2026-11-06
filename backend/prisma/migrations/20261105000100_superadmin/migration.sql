@@ -1,0 +1,1 @@
+ALTER TYPE "TipoUsuario" ADD VALUE 'SUPER_ADMIN';

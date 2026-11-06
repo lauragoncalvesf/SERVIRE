@@ -27,7 +27,7 @@ export default function Login() {
       setErro("")
       setCarregando(true)
 
-      if (!numeroInteiroPositivo(paroquiaId)) {
+      if (paroquiaId && !numeroInteiroPositivo(paroquiaId)) {
         setErro("Informe uma paróquia válida")
         return
       }
@@ -44,8 +44,8 @@ export default function Login() {
         return
       }
 
-      await login(normalizarEmail(email), senha, Number(paroquiaId))
-      navigate("/dashboard")
+      const usuario = await login(normalizarEmail(email), senha, paroquiaId ? Number(paroquiaId) : null)
+      navigate(usuario.tipo === "SUPER_ADMIN" ? "/superadmin" : "/dashboard")
     } catch (error) {
       setErro(error.response?.data?.mensagem || "Não foi possível realizar o login")
     } finally {
@@ -78,11 +78,11 @@ export default function Login() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="login-field">
-            <label htmlFor="login-paroquia">Paróquia</label>
+            <label htmlFor="login-paroquia">Paróquia (deixe vazia para conta global)</label>
             <div className="login-input-wrap">
               <Church aria-hidden="true" size={25} strokeWidth={1.8} />
               <input id="login-paroquia" type="number" min="1" step="1" value={paroquiaId}
-                onChange={(event) => setParoquiaId(event.target.value)} placeholder="ID da paróquia" required />
+                onChange={(event) => setParoquiaId(event.target.value)} placeholder="ID da paróquia" />
             </div>
           </div>
 

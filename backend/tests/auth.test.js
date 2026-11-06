@@ -58,7 +58,7 @@ test("usa o perfil atual e limita a consulta ao usuário e paróquia ativos", as
   findFirst.mock.mockImplementation(async (query) => {
     assert.deepEqual(query, {
       where: { id: 7, paroquiaId: 3, ativo: true, paroquia: { ativa: true } },
-      select: { id: true, paroquiaId: true, tipo: true }
+      select: { id: true, paroquiaId: true, tipo: true, versaoSessao: true }
     })
     return { id: 7, paroquiaId: 3, tipo: "MEMBRO" }
   })
@@ -87,4 +87,11 @@ test("encaminha falha do banco ao tratamento de erros sem retornar 401", async (
   assert.equal(req.usuarioId, undefined)
   assert.equal(next.mock.callCount(), 1)
   assert.equal(next.mock.calls[0].arguments[0], erro)
+})
+
+test("token antigo é revogado quando a versão de sessão muda", async t => {
+  findFirst.mock.mockImplementation(async () => ({ id: 7, paroquiaId: 3, tipo: "ADMIN", versaoSessao: 2 }))
+  const { res, next } = await executar(t, `Bearer ${assinar()}`)
+  assert.equal(res.code, 401)
+  assert.equal(next.mock.callCount(), 0)
 })

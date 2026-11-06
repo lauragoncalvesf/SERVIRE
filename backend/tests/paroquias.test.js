@@ -45,7 +45,7 @@ test("criação rejeita campos inválidos e normaliza textos opcionais", async (
   assert.equal(next.mock.callCount(), 0)
 })
 
-test("rotas exigem admin para criar e listam apenas dados públicos de paróquias ativas", async (t) => {
+test("rota antiga não permite criar e listam apenas dados públicos de paróquias ativas", async (t) => {
   const original = process.env.JWT_SECRET
   process.env.JWT_SECRET = "segredo-teste-paroquias"
   t.after(() => {
@@ -66,9 +66,9 @@ test("rotas exigem admin para criar e listam apenas dados públicos de paróquia
     const headers = { "Content-Type": "application/json" }
     if (tipo) headers.Authorization = `Bearer ${jwt.sign({ usuarioId: 7, paroquiaId: 3, tipo }, process.env.JWT_SECRET, { expiresIn: "1h" })}`
     const res = await fetch(base, { method: "POST", headers, body: JSON.stringify({ nome: "Teste" }) })
-    assert.equal(res.status, !tipo ? 401 : tipo === "ADMIN" ? 201 : 403)
+    assert.equal(res.status, 404)
     await res.json()
-    assert.equal(prisma.paroquia.create.mock.callCount(), tipo === "ADMIN" ? 1 : 0)
+    assert.equal(prisma.paroquia.create.mock.callCount(), 0)
   }
   const publicas = [{ id: 10, nome: "Teste", cidade: "Cidade", estado: "SP" }]
   prisma.paroquia.findMany.mock.mockImplementation(async query => {
