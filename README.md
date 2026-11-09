@@ -237,4 +237,4 @@ Projeto desenvolvido com foco na aplicação prática de conceitos de desenvolvi
 
 ## Convites de administradores por e-mail
 
-O cadastro e a reemissão de convites podem enviar e-mails automaticamente via Nodemailer/SMTP. Consulte [Configuração e testes do envio de convites](docs/EMAIL_CONVITES.md) e [Administração global](docs/SUPERADMIN.md). O envio exige `FRONTEND_URL` pública HTTPS e as variáveis SMTP; falhas preservam o cadastro e permitem entrega manual.
+O cadastro e a reemissão de convites podem enviar e-mails automaticamente pela API HTTPS do Resend. Consulte [Configuração e testes do envio de convites](docs/EMAIL_CONVITES.md) e [Administração global](docs/SUPERADMIN.md). O envio exige `RESEND_API_KEY` no backend e usa `FRONTEND_URL` pública HTTPS (padrão: `https://servirepastoral.com.br`); falhas preservam o cadastro e permitem entrega manual.

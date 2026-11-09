@@ -6,7 +6,7 @@ Implementação local, sem commit, push, deploy ou acesso ao banco do `.env` dur
 
 - Login único em `/login`. Contas paroquiais informam o ID da paróquia; a conta global deixa esse campo vazio. O backend consulta o perfil atual e a atividade da conta/paróquia, sem confiar no perfil enviado.
 - Painel `/superadmin`: indicadores reais, busca por nome/cidade, status, paginação de 20 paróquias, cadastro, detalhes, edição, ativação/desativação e administradores por paróquia.
-- Cadastro de administrador sempre fixa `ADMIN`, com senha aleatória desconhecida; o administrador define a senha por convite de 48 horas. O convite é enviado automaticamente por SMTP após o commit, quando configurado. O link aparece na resposta e no diálogo somente se o envio não for confirmado; veja [Configuração de e-mail](EMAIL_CONVITES.md).
+- Cadastro de administrador sempre fixa `ADMIN`, com senha aleatória desconhecida; o administrador define a senha por convite de 48 horas. O convite é enviado automaticamente pela API HTTPS do Resend após o commit, quando configurado. O link aparece na resposta e no diálogo somente se o envio não for confirmado; veja [Configuração de e-mail](EMAIL_CONVITES.md).
 - Convites têm 256 bits de entropia, somente SHA-256 persistido, consumo condicional e transação serializável. Nova emissão invalida convites anteriores. Senha exige 12 caracteres com letras e números e no máximo 72 bytes (limite do bcrypt). Não há senha compartilhada.
 - Transferência ocorre entre administradores ativos da mesma paróquia. O sucessor deve ter aceitado o convite; o anterior passa a membro. Não movemos usuários e seus históricos para outra paróquia.
 - Contas globais não acessam operações pastorais autenticadas. `ADMIN` permanece limitado à própria paróquia. Coordenação permanece em `MembroPastoral.papel`, podendo incluir diversas pastorais.
@@ -100,14 +100,14 @@ Não coloque esses valores no código, `.env` versionado, histórico de comandos
 2. Versione/push somente após aprovação. Mantenha os Root Directories existentes.
 3. Backend: build `npm ci && npx prisma generate`; pre-deploy `npx prisma migrate deploy`; start `npm start`. Publique backend e migrações antes do frontend para que `/auth/sessao` já exista.
 4. Frontend: build `npm run build`; start `npx --yes serve@14 -s dist -l tcp://0.0.0.0:$PORT`.
-5. Preserve `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `PROXY_HOPS`, `CORS_ORIGINS`, `VITE_API_URL`; o envio automático requer também `FRONTEND_URL` e as variáveis SMTP descritas em [EMAIL_CONVITES.md](EMAIL_CONVITES.md). Sem elas, permanece disponível a entrega manual. `SUPERADMIN_NOME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_SENHA` são temporárias, só para bootstrap. `TEST_DATABASE_URL` é exclusiva dos testes locais.
+5. Preserve `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `PROXY_HOPS`, `CORS_ORIGINS`, `VITE_API_URL`; o envio automático requer também `RESEND_API_KEY` e a origem pública `FRONTEND_URL` descritas em [EMAIL_CONVITES.md](EMAIL_CONVITES.md). Sem elas, permanece disponível a entrega manual. `SUPERADMIN_NOME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_SENHA` são temporárias, só para bootstrap. `TEST_DATABASE_URL` é exclusiva dos testes locais.
 6. Com autorização específica, rode uma vez o bootstrap no ambiente backend de produção. Não é executado automaticamente por esta implementação.
 7. Confira login global, indicadores, cadastro de paróquia e convite. Abra o convite em sessão privada, defina senha e confirme login paroquial. Teste bloqueio de rotas globais com perfil comum e desativação/reativação.
 8. Em caso de regressão, preserve as migrações aditivas; não execute reset ou rollback destrutivo. Reverta código de forma coordenada, considerando o frontend dependente de `/auth/sessao` e a nova conta global.
 
 ## Envio automático de convites
 
-Implementado com Nodemailer, após confirmação da transação e sem repetição automática. O painel distingue `enviado`, `nao_enviado` e `nao_configurado`; em falhas, preserva o cadastro e oferece entrega manual. Credenciais e tokens não são registrados em logs. Consulte [EMAIL_CONVITES.md](EMAIL_CONVITES.md) para variáveis, Gmail, testes e limites de entrega.
+Implementado com o SDK oficial do Resend via HTTPS, após confirmação da transação e sem repetição automática. O painel distingue `enviado`, `nao_enviado` e `nao_configurado`; em falhas, preserva o cadastro e oferece entrega manual. Credenciais e tokens não são registrados em logs. Consulte [EMAIL_CONVITES.md](EMAIL_CONVITES.md) para variáveis, Resend, testes e limites de entrega.
 
 ## Resultado da validação
 

@@ -1,123 +1,121 @@
 # Envio automático de convites — SERVIRE
 
-Implementado na branch `feature/envio-email-convites`. Esta alteração não exige migrações e não modifica autenticação, permissões ou isolamento paroquial. Nenhuma configuração Railway foi alterada e nenhum e-mail real foi enviado durante o desenvolvimento.
+Os convites agora usam a **API HTTPS do Resend**, pelo SDK oficial `resend` 6.37.0, compatível com Node.js 22 (requer Node >=20). O frontend é servido pelo Nginx, mas não participa do envio. Backend de autenticação, permissões, banco, migrations, DNS e Nginx não foram alterados nesta integração. Não foi implementada recuperação de senha.
 
-## Configuração do backend
+## Variáveis do backend
 
-As configurações são lidas exclusivamente do ambiente do **backend**. Não coloque senhas em variáveis `VITE_*`, código, commits, links ou logs.
-
-| Variável | Valor/finalidade |
+| Variável | Uso |
 |---|---|
-| `SMTP_HOST` | Servidor SMTP; Gmail: `smtp.gmail.com` |
-| `SMTP_PORT` | `465` para TLS implícito ou `587` para STARTTLS |
-| `SMTP_SECURE` | Texto `true` na porta 465; texto `false` na 587. `false` continua exigindo TLS via STARTTLS |
-| `SMTP_USER` | Usuário SMTP; neste projeto, `servirepastoral@gmail.com` |
-| `SMTP_PASS` | Senha de aplicativo Gmail, mantida exclusivamente no ambiente seguro |
-| `EMAIL_FROM` | Endereço remetente: `servirepastoral@gmail.com`. Também aceita formato `Nome <endereco>`; o nome exibido é sempre **SERVIRE — Sistema de Gestão Pastoral** |
-| `FRONTEND_URL` | **Nova variável:** origem pública HTTPS do frontend, sem caminhos, query, fragmentos ou credenciais. Não usar endereço do backend, localhost ou endereços privados |
+| `RESEND_API_KEY` | Obrigatória para envio. Lida exclusivamente de `process.env.RESEND_API_KEY`; já configurada no Railway segundo o contexto informado. Não foi consultada, exibida ou alterada nesta implementação. |
+| `FRONTEND_URL` | Origem pública HTTPS para os links. Produção: `https://servirepastoral.com.br`. Se ausente, esse domínio oficial é usado como padrão. Se fornecida mas inválida/vazia, nenhum envio é tentado. |
+| `NODE_ENV` | `production` no backend publicado. Em `test`, o transporte real fica bloqueado, mesmo se houver chave. |
 
-Nenhuma dessas variáveis foi criada ou modificada no Railway por esta implementação. As variáveis SMTP já existentes serão reutilizadas; confira `FRONTEND_URL` antes de uma futura publicação autorizada. Configuração ausente/inválida não derruba as demais funcionalidades do sistema.
+Remetente fixo: **`SERVIRE <convites@send.servirepastoral.com.br>`**. Não depende de `EMAIL_FROM`. O domínio `send.servirepastoral.com.br` deve continuar verificado na conta Resend à qual a chave pertence. Não houve verificação remota ou alteração de DNS nesta tarefa.
 
-O link enviado é `${FRONTEND_URL}/aceitar-convite#token=...`. O fragmento preserva o comportamento existente: o token não é enviado como query ao servidor do frontend nem como referer. A página de aceitação o remove da barra de endereço após abertura.
+Nenhuma variável é necessária no frontend/Nginx. Não colocar `RESEND_API_KEY` em `VITE_*`, build args, URLs, código ou Git. O serviço usa somente `https://api.resend.com`, independentemente de `RESEND_BASE_URL`; debug do SDK é explicitamente desativado mesmo que `RESEND_DEBUG=true` esteja no ambiente.
 
-## Gmail
+As antigas `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `EMAIL_FROM` **não são usadas para enviar convites neste fluxo**. Não foram apagadas ou modificadas. O serviço legado `emailService.js` e seus testes/diagnósticos SMTP permanecem disponíveis, sem fallback automático nem envio paralelo.
 
-1. Na conta `servirepastoral@gmail.com`, habilite a verificação em duas etapas.
-2. Gere uma senha de aplicativo específica para o SERVIRE, se a conta/política permitir, e armazene-a em `SMTP_PASS`. Não use a senha comum da conta. Senhas de aplicativo dependem de verificação em duas etapas; determinadas contas organizacionais ou com Proteção Avançada podem não disponibilizá-las. Veja a [documentação oficial do Google](https://support.google.com/accounts/answer/185833).
-3. Confira host `smtp.gmail.com`, usuário e remetente. Escolha 465/`true` ou 587/`false`, conforme a configuração do serviço. Consulte [SMTP do Gmail](https://developers.google.com/workspace/gmail/imap/imap-smtp).
-4. Após aprovação para publicação e envio real, valide a saída SMTP do ambiente Railway e faça um teste controlado com destinatário autorizado. Essa conexão **não foi testada com credenciais reais** nesta implementação.
+## Fluxo preservado
 
-Gmail pode limitar mensagens, bloquear autenticações ou direcionar convites para spam. A possibilidade de autenticar com senha de aplicativo depende das políticas da conta. Mudanças na senha da conta podem revogar senhas de aplicativo.
+1. Os endpoints existentes de criação de administrador e reemissão de convite continuam protegidos por Superadministrador.
+2. A transação serializável cria o administrador/convite ou invalida os convites anteriores e gera um novo. Tokens seguem com 256 bits de entropia, validade de **48 horas**, uso único e armazenamento apenas do SHA-256.
+3. **Após o commit**, `entregarConvite` monta o HTML/texto e chama `resendEmailService.js`. A repetição transacional nunca executa o envio.
+4. O SDK chama `resend.emails.send` com remetente fixo, destinatário, assunto, HTML e texto simples. O template existente mantém cores discretas do SERVIRE, nome quando disponível, paróquia, botão, link e explicação de validade/uso único. Dados dinâmicos do HTML são escapados.
+5. Somente resposta sem erro e com ID não vazio é considerada aceita. O ID do provedor não é exposto ou registrado.
+6. Falhas de rede, timeout ou rejeição do Resend não desfazem o cadastro nem invalidam indevidamente o convite confirmado.
 
-## Fluxo e tratamento de falhas
+O link usa `/aceitar-convite#token=...`, preservando a página existente e o comportamento do fragmento, que não é enviado como query ao servidor Nginx. Não há proxy nem alteração de rotas ou regras de aceitação.
 
-1. O backend cria o administrador e o convite de 48 horas, ou invalida convites anteriores e gera um novo, na transação serializável existente.
-2. Somente depois do commit, tenta enviar **uma vez** com Nodemailer. Repetições da transação não disparam SMTP.
-3. O e-mail inclui HTML responsivo com cores do SERVIRE, nome do administrador, paróquia, botão para definir senha, prazo e orientação para ignorar convites desconhecidos. Há também texto simples. Todos os dados dinâmicos do HTML são escapados.
-4. A resposta mantém o código de sucesso do **cadastro/emissão**, mas separa o resultado do envio no campo `envio`. Falha SMTP não é apresentada como envio bem-sucedido e não remove o administrador nem desfaz o convite.
+## Status e cópia manual
 
-| `envio.status` | Significado na interface |
+| Status | Significado |
 |---|---|
-| `enviado` | O servidor SMTP aceitou o destinatário/mensagem; não garante leitura ou chegada à caixa de entrada |
-| `nao_enviado` | Configuração inválida ou envio não confirmado; cadastro e convite preservados |
-| `nao_configurado` | Configuração SMTP incompleta ou envio bloqueado no ambiente de teste |
+| `enviado` | Resend aceitou a mensagem; não garante entrega, ausência de spam ou leitura. |
+| `nao_enviado` | Configuração inválida ou envio não confirmado. |
+| `nao_configurado` | Chave ausente ou transporte bloqueado no ambiente de testes. |
 
-`envio.motivo`, quando presente, contém somente um código controlado, como `SMTP_AUSENTE`, `SMTP_INVALIDO`, `FALHA_SMTP` ou `FRONTEND_URL_INVALIDA`; nunca mensagens brutas do provedor. Falhas SMTP também geram logs sanitizados descritos em **Diagnóstico SMTP no Railway**, abaixo.
+Motivos controlados incluem `RESEND_AUSENTE`, `RESEND_INVALIDO`, `FALHA_RESEND`, `IDEMPOTENCIA_INVALIDA`, `DESTINATARIO_INVALIDO`, `AMBIENTE_TESTE` e `FRONTEND_URL_INVALIDA`. Nenhuma resposta bruta do provedor é devolvida.
 
-Após confirmação SMTP, `convite` contém somente `expiraEm`. Em falha/ausência de configuração, contém também `token` e, se a origem pública for válida, `link`. A interface mostra esse link somente no diálogo daquela operação, permitindo selecioná-lo e copiá-lo. Nada é gravado no localStorage, em logs ou em banco em texto puro. Somente o SHA-256 continua persistido no banco. As respostas permanecem com `Cache-Control: no-store`.
+Após sucesso, a resposta inclui somente `convite.expiraEm`, sem token ou link. Na falha/ausência de configuração, inclui o token e o link para entrega manual no diálogo existente. `Cache-Control: no-store` é preservado. O link não é persistido em texto puro, logs ou localStorage. Uma nova emissão invalida o anterior; copiar o link da operação falha evita nova emissão desnecessária.
 
-Sem `FRONTEND_URL` válida, nenhum e-mail é tentado. Para manter a entrega manual preexistente, a interface usa sua origem atual como alternativa e exibe aviso para conferir o endereço antes de compartilhar. O envio automático nunca usa essa origem ou um fallback para localhost.
+Foram ajustadas somente duas expressões do diálogo do frontend: “servidor SMTP”/“confirmação do SMTP” passam a “serviço de e-mail”, pois o novo transporte é HTTPS. Layout, ações, contratos e autenticação do frontend não mudaram.
 
-## Segurança, tentativas e limites
+## Duplicação, timeout e limites
 
-- TLS mínimo 1.2, certificados validados. A porta 587 exige STARTTLS; 465 usa TLS desde o início. Não existe opção para desabilitar a validação do certificado.
-- Timeouts: conexão e saudação de 10 segundos, socket inativo de 15 segundos. Logger/debug do Nodemailer desativados; acesso a arquivos/URLs externas para conteúdo bloqueado. Veja as [opções oficiais do Nodemailer](https://nodemailer.com/smtp).
-- Sem `verify()` na inicialização, envios no startup, filas ou retries automáticos de SMTP. `Gerar convite` é uma ação explícita do operador e invalida o anterior.
-- Em falhas ambíguas de rede, o SMTP pode ter aceitado a mensagem antes da desconexão. Não reenviamos automaticamente. Entregar o mesmo link manualmente evita gerar outro convite; uma nova emissão invalida o anterior.
-- Não há garantia distribuída de entrega exatamente uma vez: se o processo parar após commit e antes de responder/enviar, será necessário gerar novo convite explicitamente. Essa escolha evita persistir o token em texto puro ou introduzir infraestrutura adicional.
-- O status de envio é da operação e não é persistido como histórico de entrega. A auditoria administrativa e as regras de convite existentes permanecem intactas.
-- Os botões continuam desabilitados durante a operação. Não há retry de POST configurado no cliente.
+- Chave de idempotência: `convite-admin/` seguido do SHA-256 do token. Ela não contém o token em texto puro e não é registrada em logs. Convites diferentes recebem chaves diferentes.
+- Chamadas simultâneas para o mesmo convite compartilham a tentativa em andamento na instância padrão do serviço. O registro é removido ao terminar, inclusive em falha; não é um cache permanente.
+- A chave também é enviada ao Resend para proteção entre tentativas/processos. A janela de idempotência do provedor é **24 horas**, distinta das 48 horas de validade do convite. Não há garantia de entrega exatamente uma vez além dessa janela. Payload diferente com a mesma chave pode resultar em conflito 409. [Documentação oficial de idempotência](https://resend.com/docs/dashboard/emails/idempotency-keys).
+- O SDK recebe `AbortSignal.timeout(15000)`. Sem retry automático da aplicação e **sem fallback SMTP**, evitando dois provedores enviarem após uma confirmação de rede perdida.
+- Timeout pode ocorrer depois de o provedor aceitar a mensagem. O status local será não confirmado e o mesmo link poderá ser entregue manualmente. Não é uma prova de que nada saiu do Resend.
+- Se o processo cair depois do commit e antes do envio/resposta, o operador precisará emitir novo convite. Não foi adicionada outbox, fila, coluna ou persistência do token em texto puro.
+- Status de entrega/bounce não é persistido e não foram criados webhooks. É possível conferir a entrega pelo painel Resend com os cuidados de acesso apropriados.
 
-## Testes sem e-mails reais
+## Logs seguros no Railway
+
+Filtre o backend por `resend_falha`. Exemplos fictícios:
+
+```json
+{"evento":"resend_falha","codigo":"AUTORIZACAO","statusHttp":403}
+{"evento":"resend_falha","codigo":"TIMEOUT"}
+```
+
+| Código | Investigação |
+|---|---|
+| `AUTORIZACAO` | HTTP 401/403: validade/permissões da chave e domínio de envio autorizado. O código sozinho não identifica qual condição foi recusada. |
+| `LIMITE` | HTTP 429: limites do provedor. |
+| `IDEMPOTENCIA` | HTTP 409: conflito de chave/payload ou pedido concorrente. |
+| `PROVEDOR` | HTTP 5xx: falha do serviço remoto. |
+| `REQUISICAO_RECUSADA` | Outro HTTP 4xx. |
+| `TIMEOUT` | AbortSignal expirou durante o pedido. |
+| `REDE_OU_RESPOSTA_INVALIDA` | Exceção de rede ou retorno sem confirmação reconhecida. |
+
+Somente evento/código permitidos e status HTTP numérico entre 400 e 599 são registrados. Chave, headers, tokens, destinatários, assunto, conteúdo, link, IDs do provedor, mensagens, stacks e objetos de erro nunca são serializados pelo serviço. A ausência de configuração é retornada de forma controlada sem inicializar o SDK.
+
+## Testes sem envio real
 
 ```bash
 cd backend
+npm ci
 npm test
+# Apenas se conferir também os dois textos do painel:
 cd ../frontend
-npm run build
+npm test
 npm run lint
+npm run build
 ```
 
-Resultado inicial do envio automático: **119 testes de backend aprovados**, incluindo 14 testes novos de configuração, TLS, sucesso, recusa/falha SMTP, link público, escape HTML, omissão de token, alternativa manual, ausência de logs, rollback/commit e repetição transacional sem duplicar o envio. Build e lint do frontend aprovados. O build mantém o aviso de bundle acima de 500 kB.
+`npm test` do backend força `NODE_ENV=test`. Os testes novos simulam o SDK Resend inteiro e usam chave fictícia; os testes legados de SMTP usam Nodemailer simulado. A suíte de integração existente também define `NODE_ENV=test`. Não são enviados nem mesmo e-mails para endereços de teste do provedor.
 
-`npm test` força `NODE_ENV=test`. Os testes unitários usam transporte simulado e valores SMTP fictícios. O serviço também bloqueia transporte real com `NODE_ENV=test`, mesmo se houver credenciais no ambiente. A suíte de integração PostgreSQL preexistente já define esse modo. Nenhum comando de teste inicia um envio real ou acessa o SMTP configurado no `.env`.
+Validação do backend: **165 testes aprovados**, incluindo 13 novos testes Resend. Cobrem chave ausente/inválida, leitura exclusiva do ambiente, HTTPS/remetente, sucesso, recusa, exceção, timeout, logs sem segredos, deduplicação simultânea, chave estável e distinta por convite, domínio padrão/configurável, fallback manual, template e debug desativado. Os testes existentes de controller continuam confirmando commit antes de envio, repetição serializável sem duplicar a entrega e cadastro preservado em falha.
 
-A auditoria online `npm audit --json` apontou 12 alertas nas outras dependências existentes (3 moderados, 8 altos e 1 crítico, este em `proxy-addr`), sem alerta informado para Nodemailer 10.3.1. Não foram executados `npm audit fix` ou upgrades fora do escopo. Esses alertas precisam de revisão separada antes da publicação. A consulta offline não é evidência suficiente de ausência de vulnerabilidades.
+Também passaram **10 testes do frontend**, lint e build Vite após a correção dos dois textos do painel; permanece o aviso preexistente de bundle acima de 500 kB. Sintaxe dos arquivos JavaScript novos/alterados e `git diff --check` aprovados.
 
-A suíte PostgreSQL não foi reexecutada nesta alteração: não houve mudança no schema/migrações ou nas regras de consumo; a integração do controller com commit/retry foi coberta por mocks. Validação visual em navegador e autenticação SMTP/entrega real no Railway ficam para uma etapa explicitamente autorizada.
+Não foi reexecutada integração com PostgreSQL: schema/migrations e regras de negócio não mudaram. Autenticação HTTPS real, entrega real e configuração de conta/domínio Resend permanecem para uma etapa autorizada.
 
-## Arquivos desta alteração
+## Publicação futura — após autorização
+
+1. Revise o diff e execute a suíte. Confirme Node >=20 (o projeto usa 22), lockfile atualizado e permissão de envio da chave já presente no backend, sem imprimi-la.
+2. Confirme `FRONTEND_URL=https://servirepastoral.com.br` e domínio de envio verificado. Nenhuma mudança dessas configurações foi executada por esta implementação.
+3. Commit/push/deploy só com autorização. O backend mantém build `npm ci && npx prisma generate`, start `npm start` e seu pre-deploy existente. **Não há nova migration desta funcionalidade.**
+4. Para o painel exibir texto neutro sobre o provedor, publique também a alteração textual do frontend em uma etapa autorizada, preservando a configuração Nginx. A API mantém compatibilidade com o frontend anterior, embora seus textos mencionem SMTP.
+5. Após autorização explícita de envio real, use destinatário controlado e gere um único convite. Confira aceitação no painel, evento no Resend e link com domínio correto. Não faça testes de escrita indiscriminados no banco de produção.
+6. Em falha, consulte códigos sanitizados e mantenha a entrega manual. Não habilite SMTP como fallback automático. Falta de configuração não derruba as outras funções do SERVIRE.
+
+Nenhum comando Railway, alteração de variável, DNS/Cloudflare, autenticação, banco, migrations ou Nginx foi feito. Não houve commit, push, deploy ou e-mail real.
+
+## Arquivos desta integração
 
 Criados:
 
-- `backend/src/services/emailService.js`: serviço reutilizável de SMTP.
-- `backend/src/services/conviteEmailService.js`: URL, modelo e resultado seguro da entrega.
-- `backend/tests/email.test.js`: serviço/modelo/link e segurança.
-- `backend/tests/conviteEmailController.test.js`: criação, reemissão e comportamento transacional.
-- `docs/EMAIL_CONVITES.md`: configuração e operação.
+- `backend/src/services/resendEmailService.js`
+- `backend/tests/resendEmail.test.js`
 
 Modificados:
 
-- `backend/package.json` e `backend/package-lock.json`: dependência Nodemailer.
-- `backend/src/controllers/superadminController.js`: envio após commit nos dois fluxos.
-- `frontend/src/pages/Superadmin.jsx`: status e cópia manual condicional.
-- `docs/SUPERADMIN.md` e `README.md`: documentação atualizada.
+- `backend/package.json` e `backend/package-lock.json`: SDK oficial Resend.
+- `backend/src/services/conviteEmailService.js`: provedor, origem padrão e idempotência; template reutilizado com saudação opcional.
+- `frontend/src/pages/Superadmin.jsx`: somente dois textos que mencionavam SMTP.
+- `docs/EMAIL_CONVITES.md`, `docs/SUPERADMIN.md` e `README.md`: documentação.
 
-Não houve commit, push, deploy, migrações ou alterações de variáveis no Railway.
-
-## Diagnóstico SMTP no Railway
-
-O serviço registra uma linha JSON com `evento=smtp_falha` por tentativa malsucedida. Após a publicação autorizada deste diagnóstico, filtre os logs do **backend** por `smtp_falha`. Exemplo sem dados reais:
-
-```json
-{"evento":"smtp_falha","categoria":"AUTENTICACAO","codigo":"EAUTH","etapa":"AUTH","respostaSmtp":535}
-```
-
-| Categoria | Indicação técnica e próximo ponto de investigação |
-|---|---|
-| `CONEXAO` | `ECONNREFUSED`, `ECONNRESET`, `ENETUNREACH`, etc.: conexão recusada, interrompida ou sem rota. Verifique conectividade e saída SMTP do ambiente; o código sozinho não comprova bloqueio do Railway. |
-| `TIMEOUT` | `ETIMEDOUT`/`ESOCKETTIMEDOUT`: o servidor não respondeu no prazo. `tipoTimeout`, se disponível, distingue `CONNECT_TIMEOUT`, `GREETING_TIMEOUT`, `UPGRADE_TIMEOUT` e `SOCKET_TIMEOUT`. |
-| `DNS` | `ENOTFOUND`, `EAI_AGAIN`, `EAI_FAIL` ou `EDNS`: resolução do servidor SMTP falhou. Confira o host e o DNS do ambiente. |
-| `TLS` | Falha de certificado, protocolo ou STARTTLS. Confira porta/`SMTP_SECURE`, certificado e negociação TLS. A validação de certificado permanece obrigatória. |
-| `AUTENTICACAO` | `EAUTH` ou falha na etapa AUTH; resposta 535 indica recusa de autenticação. Confira usuário, senha de aplicativo e política da conta Gmail sem copiar credenciais para logs. |
-| `DESTINATARIO` | Recusa SMTP em `RCPT TO` ou lista `rejected` não vazia; não registra o endereço. O status SMTP numérico, quando presente no erro, ajuda a distinguir resposta temporária (4xx) e permanente (5xx). |
-| `NAO_CONFIRMADO` | O resultado não confirmou a aceitação da mensagem, sem recusa explícita de destinatário. |
-| `DESCONHECIDO` | Nenhum código permitido reconhecido. O sistema não tenta extrair detalhes da mensagem livre do erro. |
-
-O diagnóstico reconhece também `originalCode` e `cause.code` para erros de rede encapsulados pelo Nodemailer. Uma interrupção de rede durante AUTH ou RCPT é classificada como conexão, sem atribuir indevidamente a falha à senha ou ao destinatário.
-
-Somente categoria, código permitido, etapa permitida, resposta SMTP numérica entre 400 e 599 e tipo de timeout permitido são registrados. Códigos desconhecidos viram `NAO_CLASSIFICADO` ou `TLS_OUTRO`; etapas desconhecidas viram `DESCONHECIDA`. Não são registrados host, usuário, senha, destinatário, token, link, conteúdo, mensagem, resposta textual, stack ou objeto do erro. Logger/debug do Nodemailer continuam desativados.
-
-A API permanece compatível: exceções de transporte retornam `nao_enviado`/`FALHA_SMTP`; resultados não confirmados retornam `SMTP_NAO_CONFIRMADO`. O detalhamento fica somente nos logs sanitizados. Cadastro, transações, prazo e consumo dos convites, permissões e alternativa manual permanecem intactos; `conviteEmailService.js` não precisou de alteração.
-
-Validação do diagnóstico: **138 testes de backend aprovados**, incluindo 19 novos testes de classificação, campos não confiáveis, ausência de dados sensíveis, recusa em resultado, sucesso sem log de falha e preservação do convite manual. A suíte força `NODE_ENV=test`; os novos testes usam transportes simulados. Nenhum envio real, acesso ao Railway, alteração de banco, commit, push ou deploy foi executado.
+Referências: [SDK oficial](https://github.com/resend/resend-node), [envio Node.js](https://resend.com/docs/send-with-nodejs), [idempotência](https://resend.com/docs/dashboard/emails/idempotency-keys).
