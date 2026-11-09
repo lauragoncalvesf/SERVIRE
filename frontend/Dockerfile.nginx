@@ -1,0 +1,24 @@
+# Alternativa opt-in: selecionar este arquivo apenas no NOVO serviço de teste.
+FROM node:22-alpine AS build
+WORKDIR /app
+
+# O build Vite precisa das devDependencies, mesmo com NODE_ENV=production no serviço.
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev
+
+# Não copiar .env, artefatos locais ou arquivos do backend para a imagem.
+COPY index.html vite.config.js ./
+COPY public ./public
+COPY src ./src
+
+# Informação pública incorporada ao bundle; nunca fornecer segredos como VITE_*.
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+RUN node -e 'try { const url = new URL(process.env.VITE_API_URL); if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) throw new Error(); } catch { console.error("VITE_API_URL deve ser uma URL HTTPS sem credenciais, query ou fragmento."); process.exit(1); }' \
+    && npm run build
+
+FROM nginx:stable-alpine AS runtime
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]
