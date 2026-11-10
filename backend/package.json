@@ -10,7 +10,8 @@
     "test": "NODE_ENV=test node --experimental-test-module-mocks --test tests/*.test.js",
     "postinstall": "prisma generate",
     "superadmin:criar": "node scripts/criarSuperadmin.js",
-    "test:integration": "node tests/integration/superadmin.js"
+    "test:integration": "node tests/integration/superadmin.js",
+    "test:seguranca:integration": "node --experimental-test-module-mocks tests/integration/segurancaConta.js"
   },
   "keywords": [],
   "author": "",

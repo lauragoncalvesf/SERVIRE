@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react"
+import ConfirmacaoEmailPerfil from "../components/ConfirmacaoEmailPerfil"
 import AppLayout from "../components/AppLayout"
 import api from "../services/api"
 import { useAuth } from "../contexts/auth"
@@ -82,6 +83,7 @@ export default function MeuPerfil() {
             </fieldset>
           </form>
         </section>
+        <ConfirmacaoEmailPerfil key={perfil.email} perfil={perfil} aoAtualizar={setPerfil} />
         <section className="perfil-card" aria-labelledby="senha-titulo">
           <h2 id="senha-titulo"><LockKeyhole size={21} aria-hidden="true" />Alterar senha</h2>
           <p className="perfil-descricao" id="senha-regras">Use ao menos 12 caracteres, com letras e números e até 72 bytes. Após a alteração, as outras sessões serão encerradas.</p>

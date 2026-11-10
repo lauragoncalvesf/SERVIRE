@@ -20,6 +20,8 @@ import superadminRoutes from "./routes/superadminRoutes.js"
 
 import perfilRoutes from "./routes/perfilRoutes.js"
 
+import segurancaContaRoutes from "./routes/segurancaContaRoutes.js"
+
 const app = express()
 const proxyHops = Number(process.env.PROXY_HOPS ?? 0)
 if (Number.isInteger(proxyHops) && proxyHops > 0) {
@@ -80,6 +82,7 @@ app.get("/", (req, res) => {
   })
 })
 
+segurancaContaRoutes(app)
 perfilRoutes(app)
 superadminRoutes(app)
 paroquiaRoutes(app)

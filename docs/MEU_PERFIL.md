@@ -9,6 +9,7 @@ Página `/meu-perfil`, no menu existente, para `SUPER_ADMIN`, `ADMIN` e `MEMBRO`
 - Alteração de senha em formulário separado, com confirmação, mostrar/ocultar e feedback de carregamento, erro e sucesso.
 - Atualização imediata do perfil e do nome no menu, sem recarregar a página.
 - Layout e temas existentes, formulários responsivos e campos com rótulos acessíveis.
+- Cartão de e-mail para recuperação: estado pendente/confirmado e solicitação explícita com senha atual, sem envio automático no cadastro.
 
 ## API autenticada
 
@@ -20,7 +21,7 @@ Página `/meu-perfil`, no menu existente, para `SUPER_ADMIN`, `ADMIN` e `MEMBRO`
 
 O ID e a paróquia vêm do middleware JWT. Campos adicionais, incluindo `id`, `tipo`, `ativo`, `paroquiaId` e `versaoSessao`, são rejeitados. As respostas usam `Cache-Control: no-store` e nunca retornam hash/senha. Erros de senha atual retornam 403, preservando a sessão para correção; sessão inválida retorna 401. Entradas inválidas retornam 400 e e-mail indisponível retorna 409 sem revelar outra conta.
 
-Nome é obrigatório, até 200 caracteres. E-mail é normalizado com trim e minúsculas e validado. Duplicidade respeita a regra existente: e-mail único dentro da paróquia; contas globais usam o escopo nulo e índice único parcial existente. A verificação ignora diferenças de caixa. Não é criado fluxo de verificação de endereço nem campo fictício de e-mail verificado.
+Nome é obrigatório, até 200 caracteres. E-mail é normalizado com trim e minúsculas e validado. Duplicidade respeita a regra existente: e-mail único dentro da paróquia; contas globais usam o escopo nulo e índice único parcial existente. A verificação ignora diferenças de caixa. A confirmação e autorização do endereço agora são tratadas no cartão de recuperação descrito em [Recuperação de senha](RECUPERACAO_SENHA.md); endereços existentes começam pendentes.
 
 A nova senha segue a política dos convites: 12 caracteres ou mais, letras e números e máximo de 72 bytes. A senha atual é validada com bcrypt; senhas legadas mais curtas continuam válidas como senha atual. Reutilização é rejeitada por comparação bcrypt. Nenhuma senha é registrada em logs ou localStorage.
 
@@ -66,9 +67,9 @@ npm run dev
 
 Testes backend usam Prisma simulado e bcrypt/JWT reais, sem acessar banco. Testes frontend usam Vitest, JSDOM e Testing Library como dependências de desenvolvimento, com API simulada; verificam permissões pessoais, dados somente leitura, atualização do menu/localStorage, token renovado, erros, confirmação de senha e bloqueio durante gravação.
 
-Não é necessária migração, tabela, coluna, variável nova ou alteração de dados existentes. Não houve acesso ao banco de produção, envio de e-mail, alteração no Railway, commit, push ou deploy. Não foi realizada inspeção visual em navegador real; os testes de interface usam DOM simulado.
+A implementação original do perfil não exigiu migration. A funcionalidade posterior de confirmação/recuperação exige a migration e a revogação automática descritas em [Recuperação de senha](RECUPERACAO_SENHA.md). Não houve acesso ao banco de produção, envio de e-mail, alteração no Railway, commit, push ou deploy. Não foi realizada inspeção visual em navegador real; os testes de interface usam DOM simulado.
 
-## Resultado da validação
+## Resultado da validação original do perfil
 
 - Backend: **152 testes aprovados**, sem falhas (14 novos testes de perfil e acesso global pessoal).
 - Frontend: **10 testes aprovados**, com Vitest/JSDOM.

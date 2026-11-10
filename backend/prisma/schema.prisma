@@ -86,6 +86,10 @@ model Usuario {
   criadoEm     DateTime    @default(now())
   atualizadoEm DateTime    @updatedAt
 
+  emailAutorizadoEm DateTime?
+  emailAutorizadoPor Int?
+  emailConfirmadoEm DateTime?
+  tokensSeguranca TokenSeguranca[]
   versaoSessao Int @default(0)
   convites ConviteAdmin[]
   paroquiaId Int?
@@ -290,4 +294,25 @@ model AuditoriaAdmin {
   recurso String
   recursoId Int
   criadoEm DateTime @default(now())
+}
+
+enum FinalidadeTokenSeguranca {
+  CONFIRMAR_EMAIL
+  RECUPERAR_SENHA
+}
+
+model TokenSeguranca {
+  id Int @id @default(autoincrement())
+  tokenHash String @unique
+  usuarioId Int
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  finalidade FinalidadeTokenSeguranca
+  emailHash String
+  versaoSessao Int
+  criadoEm DateTime @default(now())
+  expiraEm DateTime
+  consumidoEm DateTime?
+
+  @@index([usuarioId, finalidade, consumidoEm])
+  @@index([expiraEm])
 }

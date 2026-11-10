@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { ArrowRight, Church, Eye, EyeOff, LockKeyhole, Mail, Moon, Sun } from "lucide-react"
 
 import { useAuth } from "../contexts/auth"
@@ -117,6 +117,7 @@ export default function Login() {
             <span>{carregando ? "Entrando..." : "Entrar"}</span>
             {!carregando && <ArrowRight aria-hidden="true" size={24} strokeWidth={1.9} />}
           </button>
+          <Link to="/esqueci-senha" className="block text-center text-sm font-semibold text-[#15345b] underline">Esqueci minha senha</Link>
         </form>
 
         <footer className="login-footer">

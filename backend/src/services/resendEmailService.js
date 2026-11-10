@@ -34,7 +34,7 @@ export function criarServicoResend({ env = process.env, criarCliente = clientePa
       // Mesmo uma chave real no .env não permite envio pela suíte de integração.
       if (env.NODE_ENV === "test") return { status: "nao_configurado", motivo: "AMBIENTE_TESTE" }
       if (!emailValido(para)) return { status: "nao_enviado", motivo: "DESTINATARIO_INVALIDO" }
-      if (typeof idempotencyKey !== "string" || !/^convite-admin\/[a-f0-9]{64}$/.test(idempotencyKey)) {
+      if (typeof idempotencyKey !== "string" || !/^(convite-admin|confirmacao-email|recuperacao-senha)\/[a-f0-9]{64}$/.test(idempotencyKey)) {
         return { status: "nao_enviado", motivo: "IDEMPOTENCIA_INVALIDA" }
       }
       if (emAndamento.has(idempotencyKey)) return emAndamento.get(idempotencyKey)

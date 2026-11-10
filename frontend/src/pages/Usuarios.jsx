@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 
+import AutorizarEmailModal from "../components/AutorizarEmailModal"
 import AppLayout from "../components/AppLayout"
 import api from "../services/api"
 import { useAuth } from "../contexts/auth"
@@ -8,6 +9,7 @@ import { emailValido, textoPreenchido, telefoneValido, formatarTelefone, formata
 
 export default function Usuarios() {
   const { usuario } = useAuth()
+  const [autorizarEmail, setAutorizarEmail] = useState(null)
 
   const [usuarios, setUsuarios] = useState([])
 
@@ -426,6 +428,8 @@ export default function Usuarios() {
                       {item.email}
                     </p>
 
+                    {usuario?.tipo === "ADMIN" && item.tipo === "MEMBRO" && item.ativo && item.id !== usuario.id && <button className="mt-3 rounded-lg border border-[#1D5C9E] p-2 text-sm text-[#1D5C9E]" onClick={() => setAutorizarEmail(item)}>Autorizar e-mail de recuperação</button>}
+
                     {item.telefone && (
                       <p className="text-sm text-slate-500 mt-1">
                         {formatarTelefone(item.telefone)}
@@ -456,6 +460,8 @@ export default function Usuarios() {
       </div>
 
       {/* MODAL NOVO USUÁRIO */}
+      {autorizarEmail && <AutorizarEmailModal usuario={autorizarEmail} fechar={() => setAutorizarEmail(null)} />}
+
       {mostrarNovoUsuario && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 

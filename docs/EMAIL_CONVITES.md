@@ -1,6 +1,6 @@
 # Envio automático de convites — SERVIRE
 
-Os convites agora usam a **API HTTPS do Resend**, pelo SDK oficial `resend` 6.37.0, compatível com Node.js 22 (requer Node >=20). O frontend é servido pelo Nginx, mas não participa do envio. Backend de autenticação, permissões, banco, migrations, DNS e Nginx não foram alterados nesta integração. Não foi implementada recuperação de senha.
+Os convites agora usam a **API HTTPS do Resend**, pelo SDK oficial `resend` 6.37.0, compatível com Node.js 22 (requer Node >=20). O frontend é servido pelo Nginx, mas não participa do envio. Backend de autenticação, permissões, banco, migrations, DNS e Nginx não foram alterados nesta integração. A funcionalidade posterior de [confirmação de e-mail e recuperação de senha](RECUPERACAO_SENHA.md) reutiliza esse transporte, com tokens e endpoints separados; não altera os convites.
 
 ## Variáveis do backend
 

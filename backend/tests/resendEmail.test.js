@@ -151,3 +151,14 @@ test("debug do SDK e URL externa do ambiente não conseguem expor dados ou redir
   assert.equal(construir.mock.calls[0].arguments[1].baseUrl, "https://api.resend.com")
   assert.equal(logs.length, 0)
 })
+
+// A separação por finalidade impede colisões com os convites administrativos.
+test("Resend aceita as três finalidades e rejeita prefixos arbitrários sem envio", async () => {
+  for (const prefixo of ["convite-admin", "confirmacao-email", "recuperacao-senha"]) {
+    const chave = `${prefixo}/${"a".repeat(64)}`
+    assert.equal((await criarServicoResend().enviar({ ...mensagem, idempotencyKey: chave })).status, "enviado")
+    assert.equal(enviar.mock.calls.at(-1).arguments[1].idempotencyKey, chave)
+  }
+  assert.equal((await criarServicoResend().enviar({ ...mensagem, idempotencyKey: `outro/${"a".repeat(64)}` })).motivo, "IDEMPOTENCIA_INVALIDA")
+  assert.equal(enviar.mock.callCount(), 3)
+})

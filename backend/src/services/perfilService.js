@@ -6,6 +6,8 @@ import { assinarToken } from "./sessaoService.js"
 
 const selecaoPerfil = {
   ...usuarioSeguro,
+  emailAutorizadoEm: true,
+  emailConfirmadoEm: true,
   paroquia: { select: { id: true, nome: true } },
   pastorais: {
     where: { ativo: true, papel: "COORDENADOR", pastoral: { ativa: true } },

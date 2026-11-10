@@ -20,6 +20,7 @@ import EventoEscalas from "./pages/EventoEscalas"
 import MinhasEscalas from "./pages/MinhasEscalas"
 import Usuarios from "./pages/Usuarios"
 
+import SegurancaConta from "./pages/SegurancaConta"
 import MeuPerfil from "./pages/MeuPerfil"
 import Superadmin from "./pages/Superadmin"
 import AceitarConvite from "./pages/AceitarConvite"
@@ -30,6 +31,9 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/esqueci-senha" element={<SegurancaConta modo="solicitar" />} />
+          <Route path="/confirmar-email" element={<SegurancaConta modo="confirmar" />} />
+          <Route path="/redefinir-senha" element={<SegurancaConta modo="redefinir" />} />
           <Route path="/meu-perfil" element={<ProtectedRoute pessoal><MeuPerfil /></ProtectedRoute>} />
           <Route path="/superadmin" element={<ProtectedRoute global><Superadmin /></ProtectedRoute>} />
           <Route path="/aceitar-convite" element={<AceitarConvite />} />
